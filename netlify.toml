@@ -1,0 +1,7 @@
+# Serve the Willow Haven dashboard at the site root.
+# force = true overrides the existing index.html so "/" lands on the dashboard.
+[[redirects]]
+  from = "/"
+  to = "/dashboard.html"
+  status = 200
+  force = true
