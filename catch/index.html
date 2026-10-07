@@ -128,6 +128,11 @@ body {
 .copy { font-weight: 800; font-size: 13px; border: 0; border-radius: 12px; padding: 0 14px; background: var(--honey); color: #3b2314; cursor: pointer; }
 .copy:focus-visible { outline: 3px solid var(--red); }
 form.email { display: flex; gap: 6px; }
+.start-form { display: flex; flex-direction: column; gap: 8px; }
+.start-form input { font: inherit; font-weight: 700; font-size: 15px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); text-align: center; }
+.start-form input:focus-visible { outline: 3px solid var(--honey); border-color: transparent; }
+.start-form input.bad { border-color: var(--bad); }
+.fine.err { color: var(--bad); margin: 0; }
 form.email input { flex: 1; min-width: 0; font: inherit; font-weight: 700; padding: 11px 12px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); }
 form.email input:focus-visible { outline: 3px solid var(--honey); border-color: transparent; }
 form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0; border-radius: 12px; padding: 0 12px; background: var(--ink); color: var(--card); cursor: pointer; }
@@ -158,8 +163,12 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
         <h1>Catch for a <span class="em">discount</span></h1>
         <p>Slide the mixer left and right. Catch the falling ingredients in the bowl, dodge the bees. You have 30 seconds and your score sets your discount.</p>
         <div class="tiers" id="tierLegend"></div>
-        <button class="btn" id="startBtn">Start mixing</button>
-        <p class="fine">Best of 3 tries counts. Catch in a row for a combo, a ⭐ doubles points for a few seconds.</p>
+        <form class="start-form" id="startForm" novalidate>
+          <input type="email" id="startEmail" placeholder="Your email to play" required autocomplete="email" aria-label="Email address" />
+          <button class="btn" id="startBtn" type="submit">Start mixing</button>
+          <p class="fine err" id="startErr" hidden>Enter a valid email to play.</p>
+        </form>
+        <p class="fine">We'll email your discount code. Best of 3 tries counts.</p>
       </div>
     </div>
 
@@ -172,10 +181,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
           <div class="code" id="endCode">MIX15</div>
           <button class="copy" id="copyBtn" type="button">Copy</button>
         </div>
-        <form class="email" id="emailForm">
-          <input type="email" id="emailInput" placeholder="Your email" required autocomplete="email" aria-label="Email address" />
-          <button type="submit">Send my code</button>
-        </form>
+        <p class="fine" id="endMail"></p>
         <p class="fine" id="endNote"></p>
         <button class="btn ghost" id="againBtn" type="button">Play again</button>
       </div>
@@ -207,13 +213,14 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
       { e: '🍫', pts: 15, w: 3, c: '#6b3e26' },
       { e: '🍯', pts: 25, w: 2, c: '#f2a93b' },
     ],
-    bee:    { e: '🐝', penalty: 60, chance: 0.32, graceSeconds: 2 },
+    bee:    { e: '🐝', penalty: 60, chance: 0.36, graceSeconds: 2 },
     golden: { e: '⭐', pts: 40, frenzyMs: 3000, chance: 0.05, cooldownSeconds: 12 },
     spawnEvery: { start: 0.95, end: 0.5 },    // seconds between drops, start → end of round
-    fallSpeed:  { start: 190,  end: 400 },    // px per second
+    fallSpeed:  { start: 230,  end: 480 },    // px per second
     comboStep: 8,                             // catches in a row per extra multiplier
     maxMultiplier: 2,
-    storageKey: 'mixercatch_result_v3',
+    storageKey: 'mixercatch_result_v4',
+    emailKey: 'mixercatch_email',
   };
 
   const W = 360, H = 560;
@@ -236,7 +243,8 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     fill: el('fill'), marks: el('marks'), next: el('next'), tierLegend: el('tierLegend'),
     startOverlay: el('startOverlay'), endOverlay: el('endOverlay'), startBtn: el('startBtn'),
     endKicker: el('endKicker'), endPct: el('endPct'), endLine: el('endLine'), endCode: el('endCode'),
-    copyBtn: el('copyBtn'), emailForm: el('emailForm'), emailInput: el('emailInput'), endNote: el('endNote'),
+    copyBtn: el('copyBtn'), startForm: el('startForm'), startEmail: el('startEmail'), startErr: el('startErr'),
+    endMail: el('endMail'), endNote: el('endNote'),
     againBtn: el('againBtn'), resetLink: el('resetLink'),
   };
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -265,6 +273,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   const mixer = { x: W / 2, tx: W / 2, vx: 0, tilt: 0, whisk: 0, bob: 0 };
   let keyDir = 0;
   let lastT = 0;
+  let playerEmail = '';
 
   const rand = (a, b) => a + Math.random() * (b - a);
   const lerp = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
@@ -404,7 +413,8 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
       : 'That was your last try. Your best score counts.';
     ui.againBtn.hidden = left === 0;
     ui.copyBtn.textContent = 'Copy';
-    ui.emailForm.hidden = false;
+    // Production: POST { email: playerEmail, code: saved.code, score } to your Klaviyo / Shopify endpoint here.
+    ui.endMail.textContent = `${saved.code} is on its way to ${playerEmail}.`;
     ui.endOverlay.classList.add('show');
     if (saved.pct >= topTier.pct) startConfetti();
     buzz([40, 60, 40]);
@@ -631,16 +641,24 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key === 'a') { keyDir = -1; e.preventDefault(); }
     if (e.key === 'ArrowRight' || e.key === 'd') { keyDir = 1; e.preventDefault(); }
-    if ((e.key === ' ' || e.key === 'Enter') && state !== 'play' && document.activeElement.tagName !== 'INPUT') {
-      if (ui.startOverlay.classList.contains('show')) startGame();
-    }
   });
   window.addEventListener('keyup', (e) => {
     if ((e.key === 'ArrowLeft' || e.key === 'a') && keyDir === -1) keyDir = 0;
     if ((e.key === 'ArrowRight' || e.key === 'd') && keyDir === 1) keyDir = 0;
   });
 
-  ui.startBtn.addEventListener('click', startGame);
+  ui.startForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = ui.startEmail.value.trim();
+    const ok = email && ui.startEmail.checkValidity() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    ui.startErr.hidden = ok;
+    ui.startEmail.classList.toggle('bad', !ok);
+    if (!ok) { ui.startEmail.focus(); return; }
+    playerEmail = email;
+    try { localStorage.setItem(CFG.emailKey, email); } catch (err) {}
+    startGame();
+  });
+  ui.startEmail.addEventListener('input', () => { ui.startErr.hidden = true; ui.startEmail.classList.remove('bad'); });
   ui.againBtn.addEventListener('click', startGame);
   ui.copyBtn.addEventListener('click', () => {
     const code = ui.endCode.textContent;
@@ -648,18 +666,11 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     const fallback = () => { const r = document.createRange(); r.selectNodeContents(ui.endCode); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
     try { navigator.clipboard.writeText(code).then(done, fallback); } catch (e) { fallback(); }
   });
-  ui.emailForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = ui.emailInput.value.trim();
-    if (!email) return;
-    // Production: POST { email, code, score } to your Klaviyo / Shopify endpoint here.
-    ui.emailForm.hidden = true;
-    ui.endNote.textContent = `Done! ${ui.endCode.textContent} is on its way to ${email}.`;
-  });
   ui.resetLink.addEventListener('click', (e) => {
     e.preventDefault();
-    try { localStorage.removeItem(CFG.storageKey); } catch (err) {}
+    try { localStorage.removeItem(CFG.storageKey); localStorage.removeItem(CFG.emailKey); } catch (err) {}
     ui.endNote.textContent = '';
+    ui.startEmail.value = '';
     ui.againBtn.hidden = false;
     ui.resetLink.textContent = 'saved discount cleared';
     setTimeout(() => ui.resetLink.textContent = 'reset my saved discount', 1500);
@@ -668,10 +679,11 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   // Small hook for automated playtesting; harmless in production.
   window.__mixerCatch = {
     items: () => items, score: () => score, state: () => state, elapsed: () => elapsed,
-    setTarget, start: startGame, rimY: MIXER.rimY, bowlX: () => mixer.x + MIXER.bowlOffset, rimHalf: MIXER.rimHalf, mixerX: () => mixer.x,
+    setTarget, start: () => { playerEmail = playerEmail || 'bot@example.com'; startGame(); }, rimY: MIXER.rimY, bowlX: () => mixer.x + MIXER.bowlOffset, rimHalf: MIXER.rimHalf, mixerX: () => mixer.x,
   };
 
   // ---------- Boot ----------
+  try { playerEmail = localStorage.getItem(CFG.emailKey) || ''; ui.startEmail.value = playerEmail; } catch (e) {}
   buildMarks();
   updateHud();
   fit();
