@@ -168,7 +168,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
           <button class="btn" id="startBtn" type="submit">Start mixing</button>
           <p class="fine err" id="startErr" hidden>Enter a valid email to play.</p>
         </form>
-        <p class="fine">We'll email your discount code. Best of 3 tries counts.</p>
+        <p class="fine">We'll email your discount code. Best of 3 tries counts. Dropped ingredients cost points, so pick your catches.</p>
       </div>
     </div>
 
@@ -213,13 +213,16 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
       { e: '🍫', pts: 15, w: 3, c: '#6b3e26' },
       { e: '🍯', pts: 25, w: 2, c: '#f2a93b' },
     ],
-    bee:    { e: '🐝', penalty: 60, chance: 0.36, graceSeconds: 2 },
-    golden: { e: '⭐', pts: 40, frenzyMs: 3000, chance: 0.05, cooldownSeconds: 12 },
-    spawnEvery: { start: 0.95, end: 0.5 },    // seconds between drops, start → end of round
-    fallSpeed:  { start: 230,  end: 480 },    // px per second
+    bee:    { e: '🐝', penalty: 80, chance: 0.38, graceSeconds: 2, escortChance: 0.25 },  // escort = a bee drops right beside an ingredient
+    golden: { e: '⭐', pts: 30, frenzyMs: 2500, chance: 0.05, cooldownSeconds: 12 },
+    spawnEvery: { start: 0.85, end: 0.4 },    // seconds between drops, start → end of round
+    pairChance: 0.22,                         // chance a drop comes as two items far apart (you can only reach one)
+    missPenalty: 10,                          // points lost when an ingredient hits the floor
+    catchZone: 0.8,                           // share of the rim that catches; the edge bounces items away
+    fallSpeed:  { start: 280,  end: 560 },    // px per second
     comboStep: 8,                             // catches in a row per extra multiplier
     maxMultiplier: 2,
-    storageKey: 'mixercatch_result_v4',
+    storageKey: 'mixercatch_result_v5',
     emailKey: 'mixercatch_email',
   };
 
@@ -332,12 +335,10 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 
   // ---------- Spawning ----------
-  function spawn() {
-    const t = elapsed / CFG.duration;
-    const speed = lerp(CFG.fallSpeed.start, CFG.fallSpeed.end, t) * rand(0.88, 1.12);
-    const x = rand(24, W - 24);
+  function spawnOne(x, speed, forced) {
     let type;
-    if (elapsed > 5 && elapsed - lastGolden > CFG.golden.cooldownSeconds && Math.random() < CFG.golden.chance) {
+    if (forced) type = forced;
+    else if (elapsed > 5 && elapsed - lastGolden > CFG.golden.cooldownSeconds && Math.random() < CFG.golden.chance) {
       type = { ...CFG.golden, kind: 'golden', c: '#ffd23f' }; lastGolden = elapsed;
     } else if (elapsed > CFG.bee.graceSeconds && Math.random() < CFG.bee.chance) {
       type = { ...CFG.bee, kind: 'bee', c: '#ffd23f' };
@@ -345,9 +346,26 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
       type = { ...pick(CFG.items), kind: 'food' };
     }
     items.push({
-      x, y: -30, vy: speed, vx: type.kind === 'bee' ? rand(-70, 70) : rand(-10, 10),
-      r: 17, rot: rand(-0.4, 0.4), rotV: rand(-1.5, 1.5), wob: rand(0, 6.28), type,
+      x, y: -30, vy: speed, vx: type.kind === 'bee' ? rand(-90, 90) : rand(-10, 10),
+      r: 17, rot: rand(-0.4, 0.4), rotV: rand(-1.5, 1.5), wob: rand(0, 6.28), type, bounced: false,
     });
+    return type;
+  }
+
+  function spawn() {
+    const t = elapsed / CFG.duration;
+    const speed = lerp(CFG.fallSpeed.start, CFG.fallSpeed.end, t) * rand(0.88, 1.12);
+    const x = rand(24, W - 24);
+    const type = spawnOne(x, speed);
+    if (type.kind === 'food' && elapsed > CFG.bee.graceSeconds && Math.random() < CFG.bee.escortChance) {
+      // a bee drops right beside the ingredient at the same speed: catch one, risk the other
+      const side = x < W / 2 ? 1 : -1;
+      spawnOne(Math.max(24, Math.min(W - 24, x + side * rand(44, 64))), speed, { ...CFG.bee, kind: 'bee', c: '#ffd23f' });
+    } else if (Math.random() < CFG.pairChance) {
+      // a second drop far away on the other side: you can only reach one of them
+      const far = x < W / 2 ? rand(x + 150, W - 24) : rand(24, x - 150);
+      spawnOne(Math.max(24, Math.min(W - 24, far)), speed * rand(0.95, 1.05));
+    }
   }
 
   // ---------- Effects ----------
@@ -449,11 +467,20 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
       it.y += it.vy * dt;
       it.x += it.vx * dt + (it.type.kind === 'bee' ? Math.sin(it.wob + elapsed * 6) * 40 * dt : 0);
       it.rot += it.rotV * dt;
-      if (it.x < 14) { it.x = 14; it.vx = Math.abs(it.vx); }
-      if (it.x > W - 14) { it.x = W - 14; it.vx = -Math.abs(it.vx); }
+      if (!it.bounced) {
+        if (it.x < 14) { it.x = 14; it.vx = Math.abs(it.vx); }
+        if (it.x > W - 14) { it.x = W - 14; it.vx = -Math.abs(it.vx); }
+      }
 
       const crossed = prevY < MIXER.rimY && it.y >= MIXER.rimY;
-      if (crossed && Math.abs(it.x - bowlX) <= MIXER.rimHalf) {
+      const dx = Math.abs(it.x - bowlX);
+      if (crossed && dx > MIXER.rimHalf * CFG.catchZone && dx <= MIXER.rimHalf + 6 && !it.bounced) {
+        // hit the rim edge: bounce off and away
+        it.bounced = true; it.vy = -Math.abs(it.vy) * 0.35; it.vx = (it.x < bowlX ? -1 : 1) * rand(120, 200); it.rotV = rand(-8, 8);
+        burst(it.x, MIXER.rimY, '#e6ebf0', 5);
+        continue;
+      }
+      if (crossed && dx <= MIXER.rimHalf * CFG.catchZone) {
         items.splice(i, 1);
         if (it.type.kind === 'bee') {
           score = Math.max(0, score - it.type.penalty);
@@ -478,9 +505,15 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
         updateHud();
         continue;
       }
-      if (it.y > H + 30) {
+      if (it.bounced) it.vy += 900 * dt;   // gravity after a bounce
+      if (it.y > H + 30 || (it.bounced && (it.x < -30 || it.x > W + 30))) {
         items.splice(i, 1);
-        if (it.type.kind === 'food' && streak > 0) { streak = 0; addFloat(it.x, H - 60, 'combo lost', '#8a6a4e', 0.8); }
+        if (it.type.kind === 'food') {
+          score = Math.max(0, score - CFG.missPenalty);
+          streak = 0;
+          addFloat(Math.max(40, Math.min(W - 40, it.x)), H - 60, `dropped -${CFG.missPenalty}`, '#8a6a4e', 0.85);
+          updateHud();
+        }
       }
     }
 
