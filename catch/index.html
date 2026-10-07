@@ -4,40 +4,37 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>Mixer Catch</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;1,400&family=Poppins:wght@400;500;700&family=Courier+Prime:wght@400;700&display=swap">
 <style>
-/* Layout: one centred pop-up card. HUD (score, discount track, timer) sits above a portrait
-   canvas that scales to fit; start and result screens are overlays on the canvas. */
+/* Willow Haven brand: honey ground, cream controls, one coral action per view, ink text.
+   Garamond for the headline, Poppins for reading, typewriter (Nitti stand-in: Courier Prime) for codes and offers. */
 :root {
-  --bg: #f3dfb8;
-  --card: #fff8ea;
-  --ink: #3b2314;
-  --muted: #8a6a4e;
-  --line: #e6cfa4;
-  --honey: #f2a93b;
-  --honey-deep: #c9731a;
-  --red: #d62828;
-  --red-deep: #961b1b;
-  --good: #3f9b5a;
-  --bad: #d64545;
-  --display: "Fredoka", "Nunito", system-ui, sans-serif;
-  --body: "Nunito", system-ui, -apple-system, sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #2a1a10; --card: #3a2619; --ink: #fff3dd; --muted: #d9b893; --line: #5a4030; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #2a1a10; --card: #3a2619; --ink: #fff3dd; --muted: #d9b893; --line: #5a4030; color-scheme: dark;
+  --honey: #f3af30;
+  --cream: #fffbd9;
+  --cream-hover: #fff8c0;
+  --sand: #f6deb8;
+  --butter: #f6d676;
+  --ink: #000000;
+  --logo-ink: #231f20;
+  --coral: #ee5b4d;
+  --coral-hover: #ea301e;
+  --amber: #ef8800;
+  --hair: rgba(0, 0, 0, 0.14);
+  --dash: 1.5px dashed rgba(35, 31, 32, 0.42);
+  --lift: 0 1px 0 rgba(35,31,32,.05), 0 2px 4px rgba(35,31,32,.07), 0 28px 56px -24px rgba(35,31,32,.42);
+  --font-serif: "EB Garamond", Garamond, Baskerville, serif;
+  --font-sans: Poppins, system-ui, sans-serif;
+  --font-type: "Nitti Typewriter", "Courier Prime", Courier, monospace;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; margin: 0; }
 body {
-  background: var(--bg);
+  background: var(--honey);
   color: var(--ink);
-  font-family: var(--body);
+  font-family: var(--font-sans);
+  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -50,94 +47,92 @@ body {
 
 #popup {
   width: min(400px, 100%);
-  background: var(--card);
-  border-radius: 22px;
-  box-shadow: 0 18px 50px rgba(59, 35, 20, 0.28);
-  padding: 12px 12px 10px;
+  background: var(--honey);
+  padding: 14px 12px 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   user-select: none;
 }
+.brand { display: flex; justify-content: center; padding-bottom: 2px; }
+.wordmark { height: 16px; width: auto; }
 
 /* HUD */
-#hud { display: flex; flex-direction: column; gap: 8px; padding: 2px 4px 0; }
-.hud-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#hud { display: flex; flex-direction: column; gap: 8px; padding: 0 4px; }
+.hud-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
 .stat { display: flex; flex-direction: column; align-items: center; min-width: 64px; line-height: 1; }
-.lbl { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.stat .val { font-family: var(--display); font-weight: 700; font-size: 26px; font-variant-numeric: tabular-nums; margin-top: 3px; }
+.lbl { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--logo-ink); }
+.stat .val { font-family: var(--font-serif); font-weight: 400; font-size: 32px; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .badge {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: var(--honey); color: #3b2314;
-  border-radius: 999px; padding: 6px 18px; line-height: 1;
-  box-shadow: 0 4px 0 var(--honey-deep);
-  transition: transform 0.15s ease;
+  background: var(--cream); color: var(--ink);
+  border: 1.5px solid var(--logo-ink); padding: 7px 16px; line-height: 1;
 }
-.badge .pct { font-family: var(--display); font-weight: 700; font-size: 22px; }
-.badge .lbl { color: #5a3a1c; margin-top: 2px; }
-.badge.pop { animation: pop 0.5s ease; }
-@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.18) rotate(-3deg); } 100% { transform: scale(1); } }
+.badge .pct { font-family: var(--font-type); font-size: 20px; }
+.badge .lbl { margin-top: 3px; }
+.badge.pop { animation: pop 0.45s ease; }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
 
-.track { position: relative; height: 12px; border-radius: 999px; background: var(--line); margin: 14px 4px 2px; }
-.fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 999px;
-  background: linear-gradient(90deg, var(--honey), var(--honey-deep)); transition: width 0.25s ease; }
-.mark { position: absolute; top: 50%; width: 4px; height: 18px; margin-left: -2px; transform: translateY(-50%);
-  background: var(--card); border: 2px solid var(--muted); border-radius: 2px; }
-.mark.hit { border-color: var(--honey-deep); background: var(--honey); }
-.mark span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 3px;
-  font-size: 10px; font-weight: 800; color: var(--muted); white-space: nowrap; }
-.mark.hit span { color: var(--honey-deep); }
-.next { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; min-height: 15px; }
+.track { position: relative; height: 10px; background: var(--cream); border: 1.5px solid var(--logo-ink); margin: 16px 4px 2px; }
+.fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--amber); transition: width 0.25s ease; }
+.mark { position: absolute; top: 50%; width: 3px; height: 16px; margin-left: -1.5px; transform: translateY(-50%); background: var(--logo-ink); }
+.mark.hit { background: var(--coral); }
+.mark:last-child span { left: auto; right: 0; transform: none; }
+.mark span { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px;
+  font-family: var(--font-type); font-size: 12px; color: var(--logo-ink); white-space: nowrap; }
+.next { font-size: 12px; color: var(--logo-ink); text-align: center; min-height: 15px; }
 
 /* Stage */
 #stage { position: relative; align-self: center; width: 360px; height: 560px; }
-#game { display: block; width: 100%; height: 100%; border-radius: 16px; touch-action: none; cursor: none; }
+#game { display: block; width: 100%; height: 100%; touch-action: none; cursor: none; }
 #stage.idle #game { cursor: default; }
 
 .overlay {
-  position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
-  padding: 18px; border-radius: 16px;
-  background: rgba(59, 35, 20, 0.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  position: absolute; inset: 0; display: none; align-items: safe center; justify-content: center;
+  padding: 18px; overflow-y: auto;
+  background: rgba(35, 31, 32, 0.5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
 }
 .overlay.show { display: flex; }
 .sheet {
-  width: 100%; max-width: 300px; background: var(--card); border-radius: 18px; padding: 22px 20px 20px;
-  text-align: center; box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+  width: 100%; max-width: 304px; background: var(--cream); padding: 24px 20px 20px;
+  text-align: left; box-shadow: var(--lift);
   display: flex; flex-direction: column; gap: 12px;
 }
-.sheet h1 { font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 1; margin: 0; text-wrap: balance; }
-.sheet h1 .em { color: var(--red); }
-.sheet p { margin: 0; font-size: 14px; line-height: 1.4; color: var(--muted); }
-.tiers { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
-.tier { font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 999px; background: var(--line); color: var(--ink); }
-.tier b { color: var(--honey-deep); }
+.sheet h1 { font-family: var(--font-serif); font-weight: 400; font-size: 40px; line-height: 1.02; margin: 0; text-wrap: balance; }
+.headline { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
+.stripe { width: 72%; height: auto; display: block; }
+.sheet p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.offer { font-family: var(--font-type); font-size: 14px; }
+.tiers { display: flex; gap: 6px; flex-wrap: wrap; }
+.tier { font-family: var(--font-type); font-size: 12px; padding: 7px 10px; border: 1.5px solid var(--logo-ink); color: var(--ink); background: transparent; }
 .btn {
-  font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.02em;
-  background: var(--red); color: #fff; border: 0; border-radius: 999px; padding: 14px 26px; cursor: pointer;
-  box-shadow: 0 5px 0 var(--red-deep); transition: transform 0.05s, box-shadow 0.05s;
+  display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 16px 26px;
+  border: 0; border-radius: 30px; background: var(--coral); color: var(--ink);
+  font: 400 12px/1.2 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer; box-shadow: 0 2px 3px rgba(0,0,0,0.2); transition: background-color 0.125s, scale 0.125s;
 }
-.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--red-deep); }
-.btn:focus-visible { outline: 3px solid var(--honey); outline-offset: 2px; }
-.btn.ghost { background: transparent; color: var(--muted); box-shadow: none; font-size: 14px; padding: 6px; }
-.btn.ghost:active { transform: none; }
+.btn:hover { background: var(--coral-hover); }
+.btn:active { scale: 0.96; }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.btn.ghost { background: none; color: var(--ink); box-shadow: none; border-radius: 0; font-weight: 700; padding: 8px 0; min-height: 0; align-self: flex-start; }
+.btn.ghost:hover { background: none; text-decoration: underline; }
 
-.result-pct { font-family: var(--display); font-weight: 700; font-size: 56px; line-height: 1; color: var(--honey-deep); }
+.result-pct { font-family: var(--font-serif); font-weight: 400; font-size: 56px; line-height: 1; }
 .code-box { display: flex; align-items: stretch; gap: 6px; }
-.code { flex: 1; min-width: 0; font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: 0.12em;
-  border: 2px dashed var(--honey-deep); border-radius: 12px; padding: 10px; background: rgba(242,169,59,0.12); user-select: all; }
-.copy { font-weight: 800; font-size: 13px; border: 0; border-radius: 12px; padding: 0 14px; background: var(--honey); color: #3b2314; cursor: pointer; }
-.copy:focus-visible { outline: 3px solid var(--red); }
-form.email { display: flex; gap: 6px; }
-.start-form { display: flex; flex-direction: column; gap: 8px; }
-.start-form input { font: inherit; font-weight: 700; font-size: 15px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); text-align: center; }
-.start-form input:focus-visible { outline: 3px solid var(--honey); border-color: transparent; }
-.start-form input.bad { border-color: var(--bad); }
-.fine.err { color: var(--bad); margin: 0; }
-form.email input { flex: 1; min-width: 0; font: inherit; font-weight: 700; padding: 11px 12px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); }
-form.email input:focus-visible { outline: 3px solid var(--honey); border-color: transparent; }
-form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0; border-radius: 12px; padding: 0 12px; background: var(--ink); color: var(--card); cursor: pointer; }
-.fine { font-size: 11px !important; }
-#resetDemo { text-align: center; font-size: 11px; color: var(--muted); }
+.code { flex: 1; min-width: 0; font-family: var(--font-type); font-size: 22px; letter-spacing: 0.08em;
+  border: var(--dash); padding: 12px; background: var(--cream); text-align: center; user-select: all; }
+.copy { font: 400 12px/1.2 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; border: 1.5px solid var(--logo-ink); padding: 0 14px; background: var(--cream); color: var(--ink); cursor: pointer; }
+.copy:hover { background: var(--cream-hover); }
+.copy:active { scale: 0.96; }
+.copy:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.start-form { display: flex; flex-direction: column; gap: 10px; }
+.start-form input { font: 400 14px var(--font-sans); min-height: 48px; padding: 12px 14px; border: 1.5px solid var(--logo-ink); background: var(--cream); color: var(--ink); border-radius: 0; }
+.start-form input::placeholder { color: rgba(35,31,32,0.55); }
+.start-form input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.start-form input.bad { border-color: var(--coral-hover); }
+.fine { font-size: 12px !important; color: var(--logo-ink) !important; }
+.fine.err { color: var(--coral-hover) !important; margin: 0; }
+#resetDemo { text-align: center; font-family: var(--font-type); font-size: 11px; color: var(--logo-ink); }
 #resetDemo a { color: inherit; }
 
 @media (prefers-reduced-motion: reduce) { .badge.pop { animation: none; } .fill { transition: none; } }
@@ -145,10 +140,11 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
 </head>
 <body>
 <div id="popup">
+  <div class="brand"><svg class="wordmark" role="img" aria-label="Willow Haven" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 133.04 23.33"><defs><style>.cls-1{fill:#231f20;}</style></defs><path class="cls-1" d="M10.74,16.88l.15-.6v-.62l.1-1.04-.07-.15.2-.8-.05-.17.05-.77-.02-.35.32-.45-.07-.87-.08-.03.22-1.32-.12-.35.27-.57v-.45l-.08-.25.1-.67.22-.7v-1l.25-.4.08-.2.75-.08.35.03.4.15.2.32-.12,1.07-.12.22v1.07l-.15.52.1.52-.2.72.05.22-.25.67-.07.77.07.8-.2.47.05.25-.22.5v.57l-.1,1.02.02.08-.25.9.05.52-.1,1.1-.22.9-.3.42-.3.05-.62.3-.82-.15-.6-.35-.4-.82-.25-1.12h-.07l-.2-.92-.27-.85-.17-.35-.1-.5.1-.35-.32-.67-.08-.47-.37.22-.02.27-.12.4-.4.87-.05.72-.15.17-.05.62-.25.45-.2.75-.35.97-.3.55-1.14.42-.35.05-.5-.15-.37-.27-.25-.3v-.57l-.17-.62.03-.27v-.57l-.3-.95v-.47l-.08-1.07-.15-.47-.05-.75-.07-.37.07-.4-.2-.75-.17-.9v-.95l-.12-.37-.05-.67.05-.47-.2-.45.05-.32-.17-.45.2-.32-.07-.92.3-.22.45-.05.17-.07h.37l.37.15.22.9-.08.32.17.87-.03-.03.25.47-.07.77.05.35.07,1.12.07.52.1.27.1.7-.05.5.1.9.15.22-.2.65.32.82-.08.5.08.08v.77l.05.2-.08.67.3.1.22-.97.2-.65.32-.77.03-.27.2-.5.2-.7.22-.47v-.6l.12-.2-.17-.4.57-.87.03-.32.6-.27h.8l.45.17.55.8.08.42.3,1.02.2.95-.02.25.25.57-.05.1.35,1.17.25.6.05.52.15.5h.2Z"/><path class="cls-1" d="M24.06,18.52l.05.17-.27.32-.57.08-.37-.12-.5.05h-1.2l-.4.12-.4-.07-1.14.1-1.07-.12h-.52l-.5.12-.32-.05-.95-.08-.47.12-.5-.05-.35-.4.05-.7.25-.35,1.1-.27h.6l.42.05h.55l.77.1.22-.05.2-.17-.2-.45-.05-.3.05-.62-.1-.47.15-.47-.1-.45v-1.12l.1-.75-.1-.92.07-.47-.05-.6.17-.47v-.37l-.15-.17-.45.08-.5.15-.47.07-.55-.12-.35.08h-1.15l-.37-.1-.05-.75-.1-.45.45-.42.37-.05.75.15.3-.08h1.15l.02.03h.8l.17-.17.85.12.15-.08.87.17.17,1.24-.1.72-.08,1.07.08.55v1.29l-.08.1.08.95-.08.22.17,1.02-.12.72v.67l-.12.37.3.22.35.08.57-.12h.75l1.07-.07.47.07.17.2.1.6-.08.3ZM20.77,4.31l-.17.55-.15.67-.45.15-.45.07-.8-.17-.3-.2-.15-.37-.05-.52.05-.07v-.47l.3-.5.4-.25h1.02l.75.5v.62Z"/><path class="cls-1" d="M34.99,18.67l-.25.32-.95.1h-1.19l-.12-.08-.72.05h-1.57l-.15-.12-.77.15h-.47l-.97-.03-.95-.07-.7.12-.55-.2-.15-.92.45-.55.52-.12.55.15.4-.05.22.05,1.02-.08.62.35.2-.32-.12-.5v-.37l-.17-.6.1-.77-.1-.17.2-.82-.05-.32v-.57l.05-.22-.05-.3v-.92l.12-.27-.12-.87.08-.32-.1-.2-.08-.87v-.6l.17-.7-.12-.5.08-1.15-.1-.55.15-.45.22-.37-.2-.22-.3-.07-.65.12-.62-.08-.97.1-.87-.1-.37-.35-.05-.35.15-.62.55-.3.67.07h.55l.65.05.45-.08h1.87l.35.15.5.57-.08.47.1.57-.22.5.12.72v.82l.05.47v.9l.1,1.22-.12.47v1.02l-.05.25.15.47-.12,1.47.08.95-.15.35.12.6.1.22-.1.65-.12,1.05-.3.35.25.3,1.19-.3.42.1.67-.1.17-.1.72.05.75.35v.5l-.05.45Z"/><path class="cls-1" d="M45.94,18.67l-.25.32-.95.1h-1.19l-.12-.08-.72.05h-1.57l-.15-.12-.77.15h-.47l-.97-.03-.95-.07-.7.12-.55-.2-.15-.92.45-.55.52-.12.55.15.4-.05.22.05,1.02-.08.62.35.2-.32-.12-.5v-.37l-.17-.6.1-.77-.1-.17.2-.82-.05-.32v-.57l.05-.22-.05-.3v-.92l.12-.27-.12-.87.07-.32-.1-.2-.07-.87v-.6l.17-.7-.12-.5.07-1.15-.1-.55.15-.45.22-.37-.2-.22-.3-.07-.65.12-.62-.08-.97.1-.87-.1-.37-.35-.05-.35.15-.62.55-.3.67.07h.55l.65.05.45-.08h1.87l.35.15.5.57-.07.47.1.57-.22.5.12.72v.82l.05.47v.9l.1,1.22-.12.47v1.02l-.05.25.15.47-.12,1.47.07.95-.15.35.12.6.1.22-.1.65-.12,1.05-.3.35.25.3,1.19-.3.42.1.67-.1.17-.1.72.05.75.35v.5l-.05.45Z"/><path class="cls-1" d="M52.66,8.05h.67l.7.2.45.17.62.4.5.17v.08l.6.57.3.55.37.4.4.7.08.6v.57l.15.62-.05.67-.2,2.04-.15.32-.42,1.04-.47.57-.77.72-.5.25-.77.35-.95.1-.4.15h-.75l-.85.1-.9-.27-.25-.22-.55-.12-.22-.17-.5-.27-.08-.2-.8-.65-.22-.4-.25-.25-.22-.72-.2-1.02-.25-.45.05-.77.15-.9-.12-.6.6-1.37.1-.32.3-.65.25-.3.5-.67.5-.2.25-.17.45-.1.52-.32.12-.17h.67l-.05.02.87-.12h.3l.42.05ZM51.66,9.64l-.57.12-.32.15-.62.22-.42.45-.57,1.02-.17.52.05.8-.15.72.12.57.05.82.1.47-.02.15.42.72.08.22.5.42.75.47.32.12.65.05v.05l.97-.17h.55l.17-.15.5-.2.25-.02.5-.65.27-.55.27-.7-.12-.27.12-.25.25-1.27-.37-1.64-.15-.25-.1-.62-.57-.67-.52-.3-.7-.12-.62-.2-.35-.05h-.52Z"/><path class="cls-1" d="M61.05,16.58l.32-.82.2-.12v-1.17l.4-.62.07-.4.17-.37.25-1.19.17-.62.15-.3.2-.25.3-.25.77.1.75.27.25.75.42.67.1.65.32.85.15.72.27.55v.52l.3.62v.37l.15.6.17-.27.07-.3.1-1.02.2-.2v-.67l-.08-.45.2-.7.22-.42-.08-.95.25-.6v-.67l.17-.17-.05-.75.1-.5.15-.15.05-.7.45-.25.42-.12.42.05.35.47.1.35-.17.52.02.27-.27.57-.07.9.12.65-.37.7.07.27-.27.67v.37l-.25.97v.55l-.15.47v.32l-.07,1.04-.17.62-.3.62-.35.32-1.07.17-.42-.07-.47-.3-.42-.82-.17-1.12-.17-.27-.25-.95-.12-.22-.27-1.04.07-.37-.37-.77.12-.07-.3-.75-.15.1.07.27-.12.62-.17.37-.6,1.99.1.25-.35.52-.27.9v.52l-.35.5-.45.52-.17.1-.82.05-.8-.08-.15-.32-.3-.77-.1-.6.05-.25-.22-.8.03-.3-.1-.5-.22-.72-.07-.6v-.7l-.22-.5v-.2l-.15-.72-.25-1.07v-.42l-.08-.67-.25-.15v-.77l.05-.22.3-.45.45-.05.27-.02.77.57.03.3.1.47v.7l.17.55.17.77v.7l.12.52-.03.27.22,1.04.17.37v.72l.12-.05v1l.05.35.27.08Z"/><path class="cls-1" d="M79.74,14.34l-.17.72v.55l.12.77.05.02-.05.6v.77l.07.6-.45.62-.62.1-.62-.15-.37-.42v-.47l-.15-.62v-1.07l.1-.5v-.27l-.08-.17.08-1.17-.1-.6v-.9l.1-.52.07-.82-.17-.4.15-.52-.1-.92v-1.44l.05-.65-.12-.17.12-.55v-1.29l1-.4.17.1h.57l.22.17.08.67-.1.6.1.47v.5l-.08.27.15.67-.1.7.05.07-.12,1.07-.12.52.03.17.17.2.57-.2h2.41l.2.07.62-.05.77.17.22-.07.12-.27-.07-.8-.1-1.24-.05-.57v-1.12l.32-1.04v-.85l.27-.22h.45l.15.12.65.07.37.77-.1.77.07.72-.07.77-.03.15v.47l.1.37.05.75-.07.75v.6l-.1.6.05.6-.1.5.12.62.12.15-.1.85-.12.22.08.72-.05.52.12.97-.07.42-.05.12v1.02l-.3.32-.87.08-.37-.2-.52-.37v-.45l.07-.57.12-.12-.1-.92v-.72l-.2-.45.22-.67-.1-.4v-.47l.1-.37.05-.5-.25-.25-.9.22h-1.87l-1.12.08-.4-.2-.35.1-.07.22v.27l.2.42-.05.6Z"/><path class="cls-1" d="M99.03,19.25l-.57.05-.32-.03-.7.05-.45-.08-.47-.27-.22-.42-.12-.5-.17-.17-.45.45h-.22l-.42.4-.72.2-.4.25-.3-.03-.55.22h-.7l-1.27-.12-.92-.35-.27-.2-.15-.22-.52-.27-.45-.72-.27-.95v-1.07l.85-1.19.07-.17.3-.32.55-.15,1.14-.35.25-.12h1l.35.05h.45l.3.07.3-.03h.7l.55.15.7.3.12-.15-.1-.22-.1-.52.07-1.12-.17-.37v-.42l-.32-.52-.52-.35-.45-.37-1.15-.08-.97.1-.82.25-.47.52-.25.85-.22.3-.5.32h-.42l-.25-.05-.42-.17-.1-.35v-.55l.17-.35.05-.27.5-.85.7-.62.37-.2.65-.15.1-.17,1.12-.1h1.12l.82-.12.65.17.52.22.47.12.52.45.47.5.3.52.1.27.27.72-.1.67.2.62.1.55-.1.67.12.82-.17.65v1.47l.05.65.17.52.52.17.7-.15.32.1.12.5-.05.6-.25.27-.32.12-.02.07ZM90.4,16.71l.4.47v.05l.62.27.47.17h.67l.72-.05.9-.12.32-.17.42-.1.37-.17.57-.1.22-.25v-.15l-.17-.62.15-.87-.25-.35h-.6l-.62.07-.35-.17-.6.1-.05-.17-1.07.25h-.5l-1.12.3-.35.35-.17.8v.47Z"/><path class="cls-1" d="M108.91,9.47l-.1.62-.27.55-.47.57v.72l-.32.4-.35.92-.12.15-.47,1.12-.55.87-.27,1.1-.02.27-.4.67-.35.67-.22.55-.42.32-.8.12h-.72l-.6-.45-.15-.52-.22-.37-.32-.35-.22-.72.03-.27-.27-.55-.55-.9-.15-.6-.35-.4-.1-.67-.27-.55-.15-.05-.12-.62-.3-.97-.45-.67-.07-.3-.27-.5-.1-.5-.17-.47.45-.37.37-.05.85.2.6.77.17.6.25.37v.3l.37.72-.05.15.25.47.62,1.34.1.4.3.45.15.67.2.7.45.95-.05.12.32.82.08.37h.3l-.02-.22.17-.8.22-.6.07-.4.42-.57.32-1.27.42-.72-.05-.3.62-.97.15-.6v-.2l.32-.57.27-.87.12-.15.45-.82.22-.2.8-.15.57.2.25.22-.12.5-.25.3Z"/><path class="cls-1" d="M112.32,15.24l.05.4.22.47.17.05.32.7.52.35.15.15,1.79.4h.67l.82-.27.1-.22.75-.2.75-.97.15-.05.45-.42h.52l.17.07.4.07.15.45-.1.4-.4.92-.55.35-.37.4-.82.55-.47.17h-.22l-.42.2-1.02.22h-.5l-1.09-.2h-.5l-.4-.08-.57-.27-.6-.27-.65-.32-.32-.6-.47-.4-.1-.32-.32-.62-.22-.1-.07-.85.05-.5-.25-1.29.12-.55v-1.02l.2-.47.03-.27.4-.6.3-.65.22-.32.12-.03.35-.57.6-.32,1.07-.5.5-.12.25-.15.7-.15.65.1.25.12.35-.12.52.15.22.17.65.12.47.22.32.1.35.25,1.02,1,.35.57.15.57.15.32.17.75-.05.17.15.85-.17.35-.52.32h-.45l-.3.1-.57-.08-.37.08-.75-.05-.27.1-.6-.17-1.07.15-.55-.1-.45.2-.7-.1-.22.12-1-.12-.32-.15-.45-.1-.15.22.5,1.02.08.22ZM118.57,11.78l-.4-.75-.45-.6-.82-.62-1.25-.2h-.42l-.3-.07-.57.17-1.24.62-.27.42-.3.35-.08.3-.27.6-.22.3-.08.4.25.1.57-.22.72.05.67-.05.9-.1.82.08.85.1.65-.08.45-.12,1.07.35.17-.22-.12-.3-.32-.5Z"/><path class="cls-1" d="M124.62,11.76l.1.75v3.61l-.15.25.12.77-.1.52.1.65-.1.67-.87.15-.72-.17-.3-.32.05-.45v-1.32l-.12-.97v-2.09l.07-.92-.17-.72.1-1.2.1-.35-.08-.92.1-.4v-.62l.4-.32.45.05.52-.15.2.2-.15.97.12.12.35-.05.12-.4.47-.27.45-.37.35-.2h.65l.55-.2.55-.05h.97l.45.15.62.27.7.45.2.2.5.92.17.55.1,1.24v.6l.05.5v.72l-.05.52.12.57-.1.52.05.55-.08.27v.95l.12.8-.12.3.08.45-.47.47-.52.12-.35.02-.55-.12-.03-.27-.2-.75.12-.57.07-.65-.07-.42v-.47l-.07-.4.05-.77.1-.32-.1-1.15v-1.29l-.12-.7-.3-.75-.3-.47-.42-.17-1.29-.35-.57.22-.17.02-.77.32-1,.22-.2.3.2.37.05.45-.02.32Z"/></svg></div>
   <div id="hud">
     <div class="hud-top">
       <div class="stat"><span class="lbl">Score</span><span class="val" id="score">0</span></div>
-      <div class="badge" id="badge"><span class="pct" id="badgePct">5%</span><span class="lbl">off unlocked</span></div>
+      <div class="badge" id="badge"><span class="pct" id="badgePct">5% off</span><span class="lbl">unlocked</span></div>
       <div class="stat"><span class="lbl">Time</span><span class="val" id="time">30</span></div>
     </div>
     <div class="track"><div class="fill" id="fill"></div><div id="marks"></div></div>
@@ -160,21 +156,23 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
 
     <div class="overlay show" id="startOverlay">
       <div class="sheet">
-        <h1>Catch for a <span class="em">discount</span></h1>
-        <p>Slide the mixer left and right. Catch the falling ingredients in the bowl, dodge the bees. You have 30 seconds and your score sets your discount.</p>
+        <div class="headline"><h1>Catch for a Discount</h1><svg class="stripe" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 665 28">
+<path fill="#EE5B4D" d="M187.828 2.84945L171.115 4.35482C170.164 4.44093 169.211 4.47425 168.257 4.4548C163.705 4.37605 160.399 4.40115 158.335 4.53005C138.934 5.73549 118.862 6.28725 99.7977 7.9163C93.0959 8.48478 86.5909 8.96368 80.2824 9.35309C75.6701 9.64245 69.6506 10.9495 63.6018 10.9633C54.3647 10.9879 48.9812 12.7469 40.2058 13.4211C31.6189 14.0851 23.7984 15.2598 16.7445 16.9452C13.7807 17.6549 10.7446 17.8029 7.44279 18.0626C6.88097 18.1072 6.34785 18.1848 5.87582 18.2908C5.40378 18.3967 5.00248 18.5287 4.69659 18.6789C4.39069 18.829 4.1864 18.9941 4.09611 19.1642C4.00582 19.3342 4.03163 19.5056 4.17155 19.6681L6.61862 22.4642C6.86327 22.7403 7.46282 22.8852 8.41669 22.8988C8.77436 22.9024 9.11227 22.9153 9.43062 22.9374C10.2065 22.9844 10.3684 23.1127 9.91623 23.3225C7.65516 24.3594 4.7968 24.9024 1.34124 24.9514C-0.10849 24.9725 -0.382967 25.1372 0.517982 25.4453C2.09974 25.9903 4.06096 26.1894 6.4018 26.0425C7.39366 25.9789 8.19486 25.8229 8.80507 25.5743C10.6554 24.8224 13.0163 24.2438 15.8877 23.8384C16.7194 23.7198 17.3067 23.7828 17.65 24.0273L21.496 26.7389C21.8997 27.0231 22.4164 27.029 23.046 26.7566L24.462 26.126C24.6643 26.039 24.7668 25.9365 24.7536 25.8347C24.7405 25.7329 24.6125 25.6378 24.3896 25.5644C22.4283 24.9282 21.9039 24.145 22.8166 23.2149C23.2048 22.813 22.7811 22.5321 21.5458 22.3724L20.6793 22.26C20.0218 22.1751 19.9192 22.0425 20.372 21.8621C22.6362 20.96 22.2522 20.2353 19.2202 19.6879C18.3026 19.521 17.4292 19.5525 16.6 19.7825L12.455 20.9502C11.843 21.1225 11.3754 21.1008 11.0527 20.8851C9.92253 20.1069 10.4469 19.5699 12.6254 19.2741C13.6157 19.1402 15.1137 19.0593 17.1195 19.0314C18.0927 19.0211 18.9344 18.9082 19.6447 18.6926C20.9078 18.3236 22.3823 18.0819 24.0683 17.9674C25.0204 17.9047 25.4203 18.0159 25.2678 18.301L24.5538 19.6638C24.401 19.9372 24.6843 20.1596 25.4033 20.3311C26.9613 20.7006 27.5788 21.2147 27.256 21.8733C27.1037 22.1643 27.456 22.3763 28.3133 22.5094C29.609 22.703 30.9405 22.7315 32.3082 22.5949C33.5371 22.4732 34.0681 22.2294 33.9008 21.8635C33.4414 20.8764 34.7675 20.2215 37.8791 19.8987C38.2227 19.8627 38.5861 19.8542 38.9316 19.8739C39.2771 19.8935 39.5921 19.9407 39.8434 20.0105C40.0946 20.0804 40.2729 20.1703 40.36 20.2708C40.447 20.3714 40.4396 20.479 40.3383 20.5823C39.8141 21.1222 40.3483 21.4563 41.9404 21.5845C43.1147 21.6811 44.1756 21.6013 45.1233 21.3451C48.2434 20.5175 50.7486 20.6103 52.639 21.6236C52.767 21.694 52.9556 21.7522 53.1874 21.7928C53.4191 21.8335 53.6863 21.8552 53.9636 21.8559C54.2409 21.8567 54.5193 21.8365 54.7724 21.7972C55.0255 21.7578 55.2449 21.7008 55.4103 21.6313L56.0006 21.3714C56.9847 20.9677 56.8478 20.6247 55.5898 20.3422C52.6743 19.6748 51.9242 18.5712 53.3395 17.0311C53.6688 16.6599 53.7318 16.3768 53.5287 16.1819C53.3663 16.0272 53.105 15.8952 52.745 15.786C52.0048 15.5623 51.3302 15.5893 50.7207 15.8671C49.2265 16.5581 47.8646 16.9469 46.6349 17.0335C45.2663 17.1291 44.369 16.988 43.9433 16.6104L43.6994 16.3783C43.3139 16.0233 43.7356 15.7761 44.9641 15.6368C50.2346 15.0244 55.2585 14.4998 60.0363 14.063C61.4438 13.9313 62.9238 13.9154 64.4756 14.0152C64.7839 14.0324 65.0615 14.0768 65.2733 14.1428C65.485 14.2087 65.6215 14.2932 65.6651 14.3855C65.7087 14.4779 65.6575 14.574 65.5182 14.6615C65.3789 14.749 65.1577 14.8241 64.8825 14.8772L58.3856 16.1687C57.298 16.387 56.9965 16.6637 57.4809 16.9989L61.0243 19.5238C61.61 19.9447 62.5252 19.9973 63.7695 19.6816C65.7053 19.1918 67.8098 18.6981 70.0832 18.2007C70.5574 18.0902 70.9831 18.0365 71.3607 18.0397C71.6389 18.0451 71.8976 18.0627 72.1366 18.0925C72.5152 18.1426 72.5667 18.2177 72.2909 18.3179C70.8916 18.8131 70.7436 19.2976 71.847 19.7713C72.112 19.8876 72.4885 19.9769 72.9328 20.0288C73.377 20.0807 73.871 20.0931 74.357 20.0646C74.843 20.0361 75.3013 19.9678 75.6788 19.8677C76.0562 19.7675 76.3374 19.6397 76.4896 19.4989C77.1318 18.9093 76.724 18.4521 75.2665 18.1272C74.5275 17.9562 74.6136 17.8134 75.5248 17.6989C77.9417 17.3977 80.3224 17.2557 82.667 17.273C83.72 17.2785 84.4383 17.4206 84.8221 17.6994L86.3674 18.8261C86.6415 19.0245 87.1528 19.1816 87.8077 19.2687C88.4452 19.3482 88.9147 19.4666 89.2162 19.6241C89.8197 19.9566 89.5078 20.2101 88.28 20.3846L86.9435 20.5733C85.993 20.7063 85.3321 20.9149 84.9611 21.1991C84.453 21.5744 83.6349 21.8452 82.5063 22.0116C81.6945 22.1298 81.2615 22.3186 81.2078 22.578L80.7412 24.3312C80.6499 24.6853 80.9783 24.7189 81.7267 24.4321L83.5877 23.7122C84.2179 23.4691 84.4403 23.2029 84.2549 22.9137C84.0076 22.5203 84.1876 22.1437 84.7953 21.7838C85.0286 21.6459 85.3882 21.5292 85.8274 21.4486C86.2665 21.368 86.7653 21.3274 87.2586 21.3319L91.0736 21.3598C93.1796 21.3708 94.1362 21.0704 93.9436 20.4587C93.6245 19.5271 94.4045 18.8933 96.2842 18.5574C97.135 18.409 97.7961 18.2063 98.267 17.9491C98.9929 17.5454 99.7585 17.1349 100.564 16.7177C101.604 16.1661 102.19 16.1938 102.323 16.8011C102.37 17.0934 102.921 17.3156 103.978 17.4676C104.592 17.5611 105.317 17.5793 106.005 17.5185L117.782 16.4771C118.436 16.4212 118.746 16.4934 118.71 16.6937C118.694 16.8466 118.816 16.9847 119.077 17.1078C119.639 17.365 120.385 17.4038 121.315 17.2243C124.479 16.601 126.519 15.883 127.435 15.0701C127.863 14.7084 128.537 14.6462 129.457 14.8835C130.955 15.2779 132.138 15.7175 133.003 16.2025C133.426 16.4452 134.084 16.6064 134.98 16.6858C135.597 16.7364 136.086 16.825 136.447 16.9518C137.168 17.2053 136.973 17.3858 135.863 17.4931C131.046 17.9543 126.222 18.1135 121.391 17.9707C120.417 17.9458 119.475 17.9995 118.564 18.1316C116.763 18.4012 114.92 18.6102 113.036 18.7586C111.608 18.8731 110.579 19.0401 109.948 19.2598C108.686 19.6874 108.625 20.0731 109.766 20.4169C110.16 20.5386 110.434 20.6907 110.561 20.8585C110.689 21.0263 110.665 21.2041 110.492 21.3745C110.318 21.5449 110.002 21.7023 109.574 21.8312C109.145 21.9602 108.619 22.0564 108.046 22.1105C102.773 22.6114 97.4435 22.8085 92.0574 22.7017C91.7096 22.6961 91.3564 22.7163 91.0297 22.7606C90.703 22.8049 90.4131 22.8718 90.1858 22.9553L88.8561 23.4432C88.2256 23.6745 88.3971 23.7997 89.3709 23.8187C96.0784 23.9396 112.082 24.0169 112.94 21.0843C113.198 20.2218 114.836 19.7387 117.853 19.6351C122.062 19.4928 126.937 19.438 132.481 19.4708C132.719 19.4722 132.95 19.4889 133.157 19.5196C133.365 19.5502 133.545 19.5943 133.684 19.6487C133.824 19.7031 133.92 19.7667 133.967 19.835C134.013 19.9033 134.009 19.9748 133.954 20.0447L133.781 20.2863C133.63 20.4976 133.221 20.6906 132.631 20.8288C132.041 20.9671 131.312 21.0409 130.58 21.0365C126.387 20.9966 122.595 21.1324 119.205 21.4439C115.697 21.7699 115.692 22.0252 119.193 22.2099C125.478 22.5427 131.098 21.9811 136.051 20.5252C137.788 20.0223 138.668 19.4332 138.693 18.7579C138.696 18.5903 138.841 18.4227 139.115 18.2704C139.388 18.118 139.782 17.9858 140.26 17.8857C140.737 17.7856 141.284 17.7209 141.849 17.6974C142.415 17.6739 142.982 17.6925 143.497 17.7513C144.832 17.903 145.575 18.2499 145.726 18.7922C145.812 19.0836 145.52 19.3484 144.85 19.5865C143.904 19.9131 142.985 20.1187 142.093 20.2035C139.119 20.488 139.115 20.7139 142.078 20.8815C147.648 21.2012 151.887 20.6709 154.796 19.2907C156.919 18.292 159.809 17.8246 163.466 17.8884C164.777 17.9115 164.91 18.0522 163.863 18.3107C162.262 18.699 161.061 19.1546 160.258 19.6774C159.827 19.9453 160.098 20.0741 161.072 20.0637L186.781 19.7627C198.981 18.9874 209.731 18.6587 219.031 18.7765C223.522 18.8332 227.758 18.6022 231.739 18.0836C232.673 17.9589 233.693 17.9114 234.686 17.9465C243.116 18.2483 251.525 18.0753 259.914 17.4275C260.906 17.3522 261.879 17.3536 262.834 17.4317C268.228 17.8786 271.739 18.066 273.366 17.9939C279.142 17.7515 286.589 17.6473 295.708 17.6811C329.959 17.7908 357.28 17.9902 377.668 18.2791C403.363 18.6473 446.523 19.9867 507.146 22.2974C552.161 24.0056 597.404 25.6616 642.873 27.2655C645.1 27.3442 646.723 27.0727 647.742 26.4511C655.266 21.836 660.244 16.6624 664.782 11.7541C664.887 11.6455 664.89 11.5327 664.791 11.4278C664.691 11.323 664.494 11.2302 664.219 11.1593C663.944 11.0885 663.603 11.0425 663.232 11.0261C662.861 11.0097 662.474 11.0237 662.114 11.0665C660.053 11.3186 657.919 11.3611 655.71 11.1941C614.356 7.99476 575.212 5.86899 538.277 4.81678C513.985 4.12931 486.152 3.17886 454.776 1.96546C446.564 1.64697 438.713 1.46703 431.222 1.42557C424.745 1.39634 417.638 1.17605 409.901 0.764662C398.584 0.164515 386.784 0.17673 374.501 0.801297C371.018 0.97704 369.881 0.738754 367.07 0.327186C366.213 0.20579 365.289 0.159287 364.296 0.187653C357.149 0.390713 350.047 0.419637 342.992 0.274444C337.298 0.157068 331.106 0.464635 324.962 0.207842C319.891 -0.00581165 315.967 -0.0547779 313.188 0.0610056C307.71 0.290772 302.773 0.693122 297.32 0.702297C266.29 0.748415 242.529 1.13149 226.037 1.85146C209.962 2.55612 197.226 2.88876 187.828 2.84945ZM190.454 6.9705C190.554 6.97998 190.653 6.98361 190.752 6.98136C190.792 6.98046 190.812 6.98295 190.812 6.98881C190.793 6.99513 190.783 7.00124 190.783 7.0071C190.783 7.01883 190.763 7.02217 190.723 7.0172C188.159 6.94037 185.587 6.98106 183.008 7.13926C182.056 7.19604 181.161 7.16646 180.324 7.05048L176.29 6.51703C173.38 6.1253 173.536 5.98979 176.757 6.11042C180.972 6.27305 185.538 6.55972 190.454 6.9705ZM178.07 8.80902L178.859 9.46003C179.244 9.79161 178.84 9.93574 177.647 9.89237C175.102 9.7975 173.355 9.41463 172.406 8.74378C172.083 8.50467 172.348 8.34904 173.2 8.27691L179.298 7.76903C179.635 7.73792 179.655 7.75217 179.358 7.8117C179.121 7.85815 178.894 7.91904 178.677 7.99437C177.928 8.24018 177.725 8.51172 178.07 8.80902ZM149.831 10.2544C149.553 10.1326 149.545 9.96126 149.809 9.77804C150.072 9.59481 150.586 9.41474 151.237 9.27741C151.887 9.14009 152.622 9.05682 153.279 9.04585C153.936 9.03487 154.461 9.09713 154.739 9.21893C155.017 9.34073 155.025 9.51205 154.761 9.69528C154.498 9.8785 153.984 10.0586 153.333 10.1959C152.683 10.3332 151.948 10.4165 151.291 10.4275C150.634 10.4385 150.109 10.3762 149.831 10.2544ZM100.41 11.2624C100.409 11.2128 100.511 11.1613 100.709 11.1109C100.908 11.0606 101.198 11.0125 101.566 10.9692C101.933 10.9259 102.369 10.8884 102.85 10.8587C103.33 10.8291 103.845 10.8079 104.365 10.7963C105.416 10.7731 106.424 10.7907 107.168 10.8451C107.912 10.8996 108.331 10.9866 108.333 11.0869C108.334 11.1366 108.232 11.188 108.033 11.2384C107.835 11.2887 107.544 11.3369 107.177 11.3801C106.809 11.4234 106.373 11.461 105.893 11.4906C105.413 11.5203 104.898 11.5415 104.378 11.553C103.327 11.5763 102.319 11.5587 101.575 11.5042C100.831 11.4497 100.412 11.3628 100.41 11.2624ZM88.1016 12.5116C87.7208 12.3618 87.7472 12.2115 88.1809 12.0609C88.5947 11.9107 89.2078 11.7912 90.0203 11.7024C91.1301 11.5833 91.9071 11.6802 92.3512 11.9928L94.4704 13.4674C94.9146 13.78 94.5892 13.8813 93.4941 13.7711C91.5029 13.5698 89.7053 13.15 88.1016 12.5116ZM122.57 13.429C122.057 12.7013 122.62 12.1223 124.259 11.6921C125.128 11.4611 125.665 11.5047 125.871 11.8228C126.548 12.7755 125.971 13.6335 124.141 14.3967C122.764 14.9795 122.077 14.9275 122.082 14.2409C122.081 14.194 122.178 14.1009 122.373 13.9615C122.628 13.7856 122.693 13.6081 122.57 13.429ZM112.491 13.1294C112.749 13.0942 113.016 13.0705 113.294 13.0584C114.286 13.0124 114.517 13.1215 113.987 13.3859C113.457 13.656 112.596 13.8105 111.405 13.8492C110.452 13.8884 109.671 14.0235 109.06 14.2545C107.799 14.7348 106.408 15.1272 104.885 15.4316C104.015 15.6039 103.646 15.5389 103.778 15.2367L104.229 14.1175C104.381 13.7738 105.001 13.5308 106.09 13.3888C107.933 13.1593 109.828 13.0841 111.777 13.1631C112.016 13.1753 112.254 13.1641 112.491 13.1294ZM75.2765 14.6241L72.8954 16.0686C72.2098 16.4949 71.495 16.5111 70.7511 16.1172C70.0471 15.7342 69.8587 15.3189 70.1863 14.8714C70.3983 14.585 70.96 14.3787 71.871 14.2524C72.683 14.1401 73.5463 14.103 74.461 14.1409C74.638 14.1486 74.8038 14.1683 74.9461 14.1985C75.0883 14.2286 75.2029 14.2686 75.2815 14.3152C75.3602 14.3617 75.4009 14.4138 75.3999 14.4673C75.399 14.5208 75.3568 14.5745 75.2765 14.6241ZM88.2622 15.65C86.0364 15.6124 84.729 15.3457 84.3403 14.8499C84.0342 14.4931 84.39 14.4146 85.4076 14.6145L91.9033 15.9019C92.5019 16.0174 92.7042 16.1829 92.5104 16.3986C92.4134 16.5005 92.2467 16.5864 92.0099 16.6564C91.3592 16.8706 90.9312 16.8422 90.7264 16.571L90.4499 16.1988C90.2037 15.8524 89.4745 15.6694 88.2622 15.65ZM260.555 11.5425C262.87 11.1087 264.918 11.2002 266.7 11.8169C267.862 12.2189 267.528 12.3937 265.699 12.3413L260.958 12.2111C260.702 12.206 260.463 12.1768 260.277 12.1277C260.09 12.0785 259.966 12.0119 259.921 11.9375C259.876 11.8631 259.913 11.7848 260.027 11.7138C260.141 11.6428 260.326 11.5828 260.555 11.5425ZM212.203 12.9798C212.176 12.9361 212.214 12.8878 212.315 12.838C212.417 12.7881 212.58 12.7376 212.794 12.6892C213.009 12.6408 213.272 12.5956 213.567 12.5561C213.862 12.5167 214.185 12.4837 214.516 12.4591C214.847 12.4345 215.18 12.4188 215.496 12.4128C215.812 12.4069 216.105 12.4108 216.359 12.4243C216.612 12.4379 216.821 12.4609 216.972 12.4919C217.124 12.5229 217.216 12.5614 217.243 12.6052C217.271 12.649 217.233 12.6973 217.131 12.7471C217.03 12.797 216.867 12.8475 216.652 12.8959C216.438 12.9442 216.175 12.9895 215.88 13.0289C215.584 13.0684 215.262 13.1014 214.931 13.126C214.6 13.1506 214.267 13.1663 213.95 13.1722C213.634 13.1782 213.341 13.1743 213.088 13.1608C212.834 13.1472 212.626 13.1242 212.474 13.0932C212.323 13.0621 212.23 13.0236 212.203 12.9798ZM160.337 13.9812C160.651 13.7804 161.136 13.7225 161.794 13.8074C163.726 14.0569 165.353 14.3985 166.674 14.8321C167.097 14.968 167.32 15.15 167.296 15.3415C167.273 15.5331 167.006 15.72 166.549 15.8647L165.957 16.0541C165.129 16.3252 164.285 16.3443 163.425 16.1115C159.108 14.9478 154.133 15.0371 148.502 16.3793C147.672 16.5742 146.809 16.6084 145.912 16.482C144.716 16.3155 143.777 16.0522 143.093 15.6922C142.61 15.4215 142.884 15.2422 143.915 15.1543C147.94 14.8049 152.039 14.665 156.212 14.7347C157.051 14.7495 157.902 14.6844 158.644 14.549C159.385 14.4136 159.978 14.2147 160.337 13.9812ZM28.1604 18.3939C27.8 18.273 27.5387 18.1381 27.3764 17.9892C27.0319 17.6919 27.3247 17.4565 28.2545 17.2829C31.3801 16.7015 34.4404 16.7466 37.4355 17.418C41.7282 18.371 41.1036 18.8633 35.5618 18.895C34.2508 18.9013 32.961 18.9599 31.6921 19.0708C31.3345 19.1034 30.9596 19.1094 30.6005 19.0884C30.2414 19.0674 29.909 19.0199 29.6331 18.9502C29.4133 18.8965 29.2334 18.836 29.0928 18.7688C28.8116 18.6344 28.5007 18.5094 28.1604 18.3939ZM218.372 16.8664C218.05 16.9053 217.629 16.8467 217.2 16.7034C216.771 16.5601 216.37 16.3439 216.086 16.1023C215.801 15.8607 215.655 15.6136 215.681 15.4152C215.707 15.2168 215.903 15.0834 216.224 15.0445C216.546 15.0055 216.967 15.0642 217.396 15.2074C217.825 15.3507 218.226 15.5669 218.511 15.8085C218.795 16.0501 218.941 16.2973 218.915 16.4957C218.889 16.6941 218.694 16.8274 218.372 16.8664Z"></path>
+</svg></div>
+        <p>Slide the mixer with one finger. Catch the ingredients in the bowl, dodge the bees. You have 30 seconds and your score sets your discount.</p>
         <div class="tiers" id="tierLegend"></div>
         <form class="start-form" id="startForm" novalidate>
-          <input type="email" id="startEmail" placeholder="Your email to play" required autocomplete="email" aria-label="Email address" />
+          <input type="email" id="startEmail" placeholder="Your email" required autocomplete="email" aria-label="Email address" />
           <button class="btn" id="startBtn" type="submit">Start mixing</button>
           <p class="fine err" id="startErr" hidden>Enter a valid email to play.</p>
         </form>
-        <p class="fine">We'll email your discount code. Best of 3 tries counts. Dropped ingredients cost points, so pick your catches.</p>
+        <p class="fine">We'll email your code. Best of 3 tries counts. Dropped ingredients cost points, so pick your catches.</p>
       </div>
     </div>
 
     <div class="overlay" id="endOverlay">
       <div class="sheet">
-        <p class="lbl" id="endKicker">You unlocked</p>
+        <p class="offer" id="endKicker">You unlocked</p>
         <div class="result-pct" id="endPct">5% off</div>
         <p id="endLine"></p>
         <div class="code-box">
@@ -257,7 +255,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   // ---------- Sizing ----------
   function fit() {
     const availW = Math.min(400, window.innerWidth - 32) - 24;
-    const availH = window.innerHeight - 32 - hud.offsetHeight - 22 - 32;
+    const availH = window.innerHeight - 32 - hud.offsetHeight - document.querySelector('.brand').offsetHeight - 22 - 34;
     const scale = Math.max(0.4, Math.min(availW / W, availH / H));
     stage.style.width = Math.floor(W * scale) + 'px';
     stage.style.height = Math.floor(H * scale) + 'px';
@@ -304,13 +302,13 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     CFG.tiers.forEach((t, i) => {
       const chip = document.createElement('span');
       chip.className = 'tier';
-      chip.innerHTML = i === 0 ? `<b>${t.pct}%</b> for playing` : `<b>${t.pct}%</b> at ${t.min}`;
+      chip.textContent = i === 0 ? `${t.pct}% off for playing` : `${t.pct}% off at ${t.min} points`;
       ui.tierLegend.appendChild(chip);
       if (i === 0) return;
       const m = document.createElement('div');
       m.className = 'mark';
       m.style.left = (t.min / topTier.min * 100) + '%';
-      m.innerHTML = `<span>${t.pct}%</span>`;
+      m.innerHTML = `<span>${t.pct}% off</span>`;
       m.dataset.min = t.min;
       ui.marks.appendChild(m);
     });
@@ -324,12 +322,12 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     if (idx !== tierIndex) {
       tierIndex = idx;
       ui.badge.classList.remove('pop'); void ui.badge.offsetWidth; ui.badge.classList.add('pop');
-      if (state === 'play') addFloat(W / 2, 170, `${CFG.tiers[idx].pct}% OFF UNLOCKED`, '#c9731a', 1.3);
+      if (state === 'play') addFloat(W / 2, 170, `${CFG.tiers[idx].pct}% off unlocked`, '#ee5b4d', 1.3);
       buzz(30);
     }
-    ui.badgePct.textContent = CFG.tiers[idx].pct + '%';
+    ui.badgePct.textContent = CFG.tiers[idx].pct + '% off';
     const nxt = CFG.tiers[idx + 1];
-    ui.next.textContent = nxt ? `${nxt.min - score} more for ${nxt.pct}% off` : 'Top discount unlocked!';
+    ui.next.textContent = nxt ? `${nxt.min - score} more points for ${nxt.pct}% off` : 'Top discount unlocked.';
   }
 
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
@@ -383,7 +381,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   }
   function startConfetti() {
     if (reduceMotion) return;
-    const colors = ['#f2a93b', '#d62828', '#3f9b5a', '#5b6abf', '#ffffff'];
+    const colors = ['#f3af30', '#ee5b4d', '#fffbd9', '#231f20', '#f6d676'];
     for (let i = 0; i < 90; i++) {
       confetti.push({ x: rand(0, W), y: rand(-H, 0), vy: rand(80, 170), vx: rand(-30, 30), w: rand(5, 9), h: rand(8, 14),
         rot: rand(0, 6.28), rotV: rand(-4, 4), color: colors[i % colors.length] });
@@ -420,7 +418,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     if (improved) { saved.best = run.score; saved.pct = run.pct; saved.code = run.code; }
     saveResult(saved);
     const left = Math.max(0, CFG.attempts - saved.plays);
-    ui.endKicker.textContent = saved.pct >= topTier.pct ? 'Amazing! You unlocked' : 'You unlocked';
+    ui.endKicker.textContent = saved.pct >= topTier.pct ? 'Top score. You unlocked' : 'You unlocked';
     ui.endPct.textContent = saved.pct + '% off';
     ui.endLine.textContent = improved || saved.plays === 1
       ? `You scored ${run.score} points.`
@@ -486,19 +484,19 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
           score = Math.max(0, score - it.type.penalty);
           streak = 0;
           shake = reduceMotion ? 0 : 0.35; flash = 0.4;
-          addFloat(it.x, MIXER.rimY - 10, `Ouch! -${it.type.penalty}`, '#d64545', 1);
+          addFloat(it.x, MIXER.rimY - 10, `Stung -${it.type.penalty}`, '#ea301e', 1);
           burst(it.x, MIXER.rimY, '#1a1a1a', 10);
           buzz(60);
         } else {
           let gained = it.type.pts * multiplier();
           if (it.type.kind === 'golden') {
             frenzyUntil = elapsed * 1000 + it.type.frenzyMs;
-            addFloat(W / 2, 150, 'DOUBLE POINTS!', '#c9731a', 1.4);
+            addFloat(W / 2, 150, 'Double points', '#ef8800', 1.4);
           }
           score += gained;
           streak++;
           const m = multiplier();
-          addFloat(it.x, MIXER.rimY - 14, `+${gained}` + (m > 1 ? `  x${m}` : ''), m > 1 ? '#c9731a' : '#3b2314', m > 1 ? 1.15 : 1);
+          addFloat(it.x, MIXER.rimY - 14, `+${gained}` + (m > 1 ? `  x${m}` : ''), m > 1 ? '#ef8800' : '#231f20', m > 1 ? 1.15 : 1);
           burst(it.x, MIXER.rimY, it.type.c, 12);
           buzz(12);
         }
@@ -511,7 +509,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
         if (it.type.kind === 'food') {
           score = Math.max(0, score - CFG.missPenalty);
           streak = 0;
-          addFloat(Math.max(40, Math.min(W - 40, it.x)), H - 60, `dropped -${CFG.missPenalty}`, '#8a6a4e', 0.85);
+          addFloat(Math.max(40, Math.min(W - 40, it.x)), H - 60, `Dropped -${CFG.missPenalty}`, '#231f20', 0.85);
           updateHud();
         }
       }
@@ -549,16 +547,16 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
 
   function drawBackground() {
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#fff6e3'); g.addColorStop(1, '#f6dfb6');
+    g.addColorStop(0, '#fffbd9'); g.addColorStop(1, '#f6deb8');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     // kitchen tiles
-    ctx.strokeStyle = 'rgba(138,106,78,0.12)'; ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(35,31,32,0.10)'; ctx.lineWidth = 1;
     for (let y = 40; y < GROUND; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
     for (let x = 0; x < W; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, GROUND); ctx.stroke(); }
     // frenzy glow
     if (state === 'play' && elapsed * 1000 < frenzyUntil) {
       const a = 0.18 + Math.sin(elapsed * 10) * 0.06;
-      ctx.fillStyle = `rgba(242,169,59,${a})`; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = `rgba(243,175,48,${a})`; ctx.fillRect(0, 0, W, H);
     }
     // counter
     ctx.fillStyle = '#b97a4b'; ctx.fillRect(0, GROUND, W, H - GROUND);
@@ -579,7 +577,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     if (mixerImg.complete && mixerImg.naturalWidth) ctx.drawImage(mixerImg, X(0), Y(0), MW, MH);
     // batter and spinning flat beater at the rim
     const bx = X(SPRITE.bowlC), rim = Y(SPRITE.rimV);
-    ctx.fillStyle = '#f6e7c9'; ctx.beginPath(); ctx.ellipse(bx, rim, MW * SPRITE.bowlHalf * 0.86, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f6d676'; ctx.beginPath(); ctx.ellipse(bx, rim, MW * SPRITE.bowlHalf * 0.86, 5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.save(); ctx.translate(bx, rim);
     ctx.strokeStyle = '#8b98a8'; ctx.lineWidth = 2.5;
     for (let i = 0; i < 2; i++) {
@@ -592,10 +590,10 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     const m = multiplier();
     if (state === 'play' && m > 1) {
       ctx.save();
-      ctx.font = `700 14px ${getComputedStyle(document.documentElement).getPropertyValue('--display')}`;
+      ctx.font = `400 13px ${getComputedStyle(document.documentElement).getPropertyValue('--font-type')}`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#c9731a'; roundRect(mixer.x + MW * 0.3, GROUND - MH - 26, 34, 22, 11); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.fillText(`x${m}`, mixer.x + MW * 0.3 + 17, GROUND - MH - 15);
+      ctx.fillStyle = '#231f20'; ctx.fillRect(mixer.x + MW * 0.3, GROUND - MH - 26, 34, 22);
+      ctx.fillStyle = '#fffbd9'; ctx.fillText(`x${m}`, mixer.x + MW * 0.3 + 17, GROUND - MH - 15);
       ctx.restore();
     }
   }
@@ -622,17 +620,17 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
       ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
-    const display = getComputedStyle(document.documentElement).getPropertyValue('--display');
+    const display = getComputedStyle(document.documentElement).getPropertyValue('--font-sans');
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (const f of floats) {
       const a = 1 - Math.pow(f.t / f.life, 2);
       ctx.globalAlpha = a;
       ctx.font = `700 ${Math.round(18 * f.size)}px ${display}`;
-      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,248,234,0.9)'; ctx.strokeText(f.text, f.x, f.y);
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,251,217,0.92)'; ctx.strokeText(f.text, f.x, f.y);
       ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
     }
     ctx.globalAlpha = 1;
-    if (flash > 0) { ctx.fillStyle = `rgba(214,69,69,${flash * 0.5})`; ctx.fillRect(0, 0, W, H); }
+    if (flash > 0) { ctx.fillStyle = `rgba(238,91,77,${flash * 0.5})`; ctx.fillRect(0, 0, W, H); }
   }
 
   function drawConfetti() {
