@@ -220,7 +220,9 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
 
   const W = 360, H = 560;
   const GROUND = H - 30;
-  const MIXER = { halfBase: 52, rimY: GROUND - 74, rimHalf: 42, bowlOffset: 8 };
+  // Mixer drawn from a traced KitchenAid side profile: MW x MH box, u/v in 0..1, ground at v = 1
+  const MW = 128, MH = 150;
+  const MIXER = { halfBase: 64, rimY: GROUND - MH * 0.60, rimHalf: Math.round(MW * 0.29), bowlOffset: Math.round(MW * 0.19) };
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -323,7 +325,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   function spawn() {
     const t = elapsed / CFG.duration;
     const speed = lerp(CFG.fallSpeed.start, CFG.fallSpeed.end, t) * rand(0.88, 1.12);
-    const x = rand(28, W - 28);
+    const x = rand(24, W - 24);
     let type;
     if (elapsed > 5 && elapsed - lastGolden > CFG.golden.cooldownSeconds && Math.random() < CFG.golden.chance) {
       type = { ...CFG.golden, kind: 'golden', c: '#ffd23f' }; lastGolden = elapsed;
@@ -410,7 +412,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   // ---------- Update ----------
   function update(dt) {
     // mixer
-    if (keyDir) mixer.tx = Math.max(MIXER.halfBase, Math.min(W - MIXER.halfBase, mixer.tx + keyDir * 460 * dt));
+    if (keyDir) setTarget(mixer.tx + keyDir * 460 * dt);
     const prevX = mixer.x;
     mixer.x += (mixer.tx - mixer.x) * Math.min(1, dt * 16);
     mixer.vx = (mixer.x - prevX) / Math.max(dt, 0.001);
@@ -522,102 +524,113 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   }
 
   function drawMixer() {
-    const x = mixer.x, g = GROUND;
-    const bx = MIXER.bowlOffset, rim = -(g - MIXER.rimY);
+    const g = GROUND;
+    const X = (u) => -MW / 2 + u * MW;
+    const Y = (v) => -MH * (1 - v);
+    const red = '#c8102e', redDark = '#8f0a20', redLight = '#e4304c';
     ctx.save();
-    ctx.translate(x, g);
+    ctx.translate(mixer.x, g);
     ctx.rotate(mixer.tilt * 0.5);
 
     // shadow
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    ctx.beginPath(); ctx.ellipse(2, 2, 60, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(X(0.5), 2, MW * 0.52, 7, 0, 0, Math.PI * 2); ctx.fill();
 
-    const red = '#c8102e', redDark = '#8f0a20', redLight = '#e4304c';
+    // base plate with the small pedestal the bowl stands on
+    const baseG = ctx.createLinearGradient(0, Y(0.90), 0, Y(1));
+    baseG.addColorStop(0, redLight); baseG.addColorStop(1, redDark);
+    ctx.fillStyle = baseG;
+    roundRect(X(0.0), Y(0.90), MW, MH * 0.10, 7); ctx.fill();
+    roundRect(X(0.77), Y(0.85), MW * 0.16, MH * 0.06, 3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; roundRect(X(0.03), Y(0.905), MW * 0.6, 3, 1.5); ctx.fill();
 
-    // base: rounded pedestal with a flared foot
-    ctx.fillStyle = redDark; roundRect(-52, -7, 104, 7, 3); ctx.fill();
-    const baseG = ctx.createLinearGradient(0, -26, 0, -6);
-    baseG.addColorStop(0, redLight); baseG.addColorStop(1, red);
-    ctx.fillStyle = baseG; roundRect(-48, -26, 96, 20, 9); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; roundRect(-44, -24, 60, 4, 2); ctx.fill();
-
-    // column + tilt head as one silhouette (side view, head reaches over the bowl)
-    const bodyG = ctx.createLinearGradient(-46, 0, 60, 0);
-    bodyG.addColorStop(0, redDark); bodyG.addColorStop(0.25, red); bodyG.addColorStop(0.6, redLight); bodyG.addColorStop(1, red);
+    // head + slanted pedestal, one silhouette
+    const bodyG = ctx.createLinearGradient(X(0), 0, X(1), 0);
+    bodyG.addColorStop(0, redDark); bodyG.addColorStop(0.3, red); bodyG.addColorStop(0.65, redLight); bodyG.addColorStop(1, red);
     ctx.fillStyle = bodyG;
     ctx.beginPath();
-    ctx.moveTo(-46, -26);
-    ctx.lineTo(-46, -108);
-    ctx.quadraticCurveTo(-46, -140, -14, -140);      // rounded back shoulder
-    ctx.lineTo(26, -140);
-    ctx.quadraticCurveTo(60, -140, 60, -112);        // long rounded nose
-    ctx.quadraticCurveTo(60, -92, 42, -90);          // nose dips down toward the hub
-    ctx.lineTo(-16, -90);                            // underside of the head
-    ctx.lineTo(-16, -26);                            // front face of the column
+    ctx.moveTo(X(0.17), Y(0.0));
+    ctx.lineTo(X(0.70), Y(0.0));
+    ctx.quadraticCurveTo(X(0.845), Y(0.0), X(0.845), Y(0.10));   // rounded front-top corner
+    ctx.lineTo(X(0.905), Y(0.10));                               // hub cap bump
+    ctx.lineTo(X(0.905), Y(0.20));
+    ctx.lineTo(X(0.855), Y(0.20));
+    ctx.lineTo(X(0.855), Y(0.30));                               // front face
+    ctx.lineTo(X(0.80), Y(0.30));                                // stepped nose
+    ctx.lineTo(X(0.80), Y(0.34));
+    ctx.lineTo(X(0.72), Y(0.34));
+    ctx.lineTo(X(0.72), Y(0.385));                               // attachment hub
+    ctx.lineTo(X(0.60), Y(0.385));
+    ctx.lineTo(X(0.60), Y(0.34));
+    ctx.lineTo(X(0.36), Y(0.34));                                // underside of the head
+    ctx.lineTo(X(0.46), Y(0.90));                                // pedestal, hidden behind the bowl
+    ctx.lineTo(X(0.03), Y(0.90));
+    ctx.lineTo(X(0.165), Y(0.37));                               // slanted pedestal front
+    ctx.lineTo(X(0.12), Y(0.33));                                // neck notch
+    ctx.lineTo(X(0.085), Y(0.30));
+    ctx.quadraticCurveTo(X(0.01), Y(0.26), X(0.02), Y(0.14));     // big round back
+    ctx.quadraticCurveTo(X(0.03), Y(0.0), X(0.17), Y(0.0));
     ctx.closePath(); ctx.fill();
-    // top highlight along the head
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(-30, -134); ctx.quadraticCurveTo(-8, -137, 26, -136); ctx.quadraticCurveTo(44, -135, 54, -124); ctx.stroke();
-    // hinge seam where the head tilts
-    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(-16, -92); ctx.lineTo(-16, -40); ctx.stroke();
-    // head lock lever
-    ctx.fillStyle = '#2b1d12'; roundRect(-44, -70, 10, 4, 2); ctx.fill();
-    ctx.fillStyle = '#dfe5ec'; ctx.beginPath(); ctx.arc(-34, -68, 3.5, 0, Math.PI * 2); ctx.fill();
 
-    // speed control: slot with chrome lever on the side of the head
-    ctx.fillStyle = 'rgba(0,0,0,0.28)'; roundRect(6, -118, 30, 5, 2.5); ctx.fill();
-    ctx.fillStyle = '#eef2f6'; roundRect(10, -123, 9, 14, 3); ctx.fill();
-    ctx.fillStyle = '#9aa7b5'; roundRect(12, -121, 5, 10, 2); ctx.fill();
+    // highlight along the top and the back round
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(X(0.10), Y(0.05)); ctx.quadraticCurveTo(X(0.4), Y(0.015), X(0.70), Y(0.03)); ctx.stroke();
+    ctx.lineCap = 'butt';
+    // seam between the back cap and the head
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(X(0.17), Y(0.02)); ctx.lineTo(X(0.17), Y(0.32)); ctx.stroke();
+    // shading on the pedestal
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.beginPath(); ctx.moveTo(X(0.165), Y(0.37)); ctx.lineTo(X(0.26), Y(0.37)); ctx.lineTo(X(0.14), Y(0.90)); ctx.lineTo(X(0.03), Y(0.90)); ctx.closePath(); ctx.fill();
 
-    // chrome band at the back of the head with badge
-    ctx.fillStyle = '#dfe5ec'; roundRect(-12, -140, 7, 50, 2); ctx.fill();
-    ctx.fillStyle = '#eef2f6'; roundRect(-10, -138, 3, 46, 1); ctx.fill();
+    // speed lever: chrome knob with slot
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(X(0.40), Y(0.25)); ctx.lineTo(X(0.53), Y(0.25)); ctx.stroke();
+    ctx.fillStyle = '#eef2f6'; ctx.beginPath(); ctx.arc(X(0.385), Y(0.25), MW * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#9aa7b5'; ctx.beginPath(); ctx.arc(X(0.385), Y(0.25), MW * 0.014, 0, Math.PI * 2); ctx.fill();
 
-    // attachment hub cap on the nose
-    ctx.fillStyle = '#dfe5ec'; ctx.beginPath(); ctx.arc(53, -104, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#6b7784'; ctx.beginPath(); ctx.arc(53, -104, 3.5, 0, Math.PI * 2); ctx.fill();
+    // chrome hub cap on the nose and the attachment hub
+    ctx.fillStyle = '#dfe5ec'; roundRect(X(0.86), Y(0.115), MW * 0.04, MH * 0.07, 2); ctx.fill();
+    ctx.fillStyle = '#6b7784'; ctx.beginPath(); ctx.arc(X(0.88), Y(0.15), 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#dfe5ec'; roundRect(X(0.62), Y(0.35), MW * 0.08, MH * 0.03, 2); ctx.fill();
 
-    // beater shaft from the head into the bowl
-    ctx.fillStyle = '#9aa7b5'; ctx.fillRect(bx - 3, -90, 6, 90 + rim + 2);
+    // beater shaft into the bowl
+    const bx = X(0.69), rim = Y(0.40);
+    ctx.fillStyle = '#9aa7b5'; ctx.fillRect(X(0.655), Y(0.385), MW * 0.03, rim - Y(0.385) + 2);
 
-    // stainless bowl (wider at the rim, rounded bottom) sitting on the base
-    const bowlG = ctx.createLinearGradient(bx - 44, 0, bx + 44, 0);
+    // stainless bowl: flared rim, narrow foot on the pedestal
+    const bowlG = ctx.createLinearGradient(X(0.40), 0, X(0.98), 0);
     bowlG.addColorStop(0, '#aab5c2'); bowlG.addColorStop(0.35, '#f4f7fa'); bowlG.addColorStop(0.7, '#d4dce5'); bowlG.addColorStop(1, '#98a4b2');
     ctx.fillStyle = bowlG;
     ctx.beginPath();
-    ctx.moveTo(bx - 44, rim);
-    ctx.lineTo(bx + 44, rim);
-    ctx.quadraticCurveTo(bx + 42, rim + 34, bx + 28, rim + 46);
-    ctx.quadraticCurveTo(bx + 16, rim + 50, bx, rim + 50);
-    ctx.quadraticCurveTo(bx - 16, rim + 50, bx - 28, rim + 46);
-    ctx.quadraticCurveTo(bx - 42, rim + 34, bx - 44, rim);
+    ctx.moveTo(X(0.40), rim);
+    ctx.lineTo(X(0.98), rim);
+    ctx.lineTo(X(0.98), Y(0.44));
+    ctx.bezierCurveTo(X(0.99), Y(0.62), X(1.0), Y(0.80), X(0.90), Y(0.85));
+    ctx.lineTo(X(0.78), Y(0.85));
+    ctx.bezierCurveTo(X(0.60), Y(0.84), X(0.42), Y(0.70), X(0.40), Y(0.44));
     ctx.closePath(); ctx.fill();
-    // bowl handle
-    ctx.strokeStyle = '#c3ccd6'; ctx.lineWidth = 4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(bx + 40, rim + 10); ctx.quadraticCurveTo(bx + 60, rim + 18, bx + 38, rim + 34); ctx.stroke();
-    ctx.lineCap = 'butt';
-    // rim and batter
-    ctx.fillStyle = '#e6ebf0'; ctx.beginPath(); ctx.ellipse(bx, rim, 44, 6, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#f6e7c9'; ctx.beginPath(); ctx.ellipse(bx, rim + 1, 38, 4, 0, 0, Math.PI * 2); ctx.fill();
-    // spinning flat beater seen from above the batter
+    // rim band and batter
+    ctx.fillStyle = '#e6ebf0'; ctx.beginPath(); ctx.ellipse(bx, rim, MW * 0.29, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f6e7c9'; ctx.beginPath(); ctx.ellipse(bx, rim + 1, MW * 0.25, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+    // flat beater spinning in the batter
     ctx.save(); ctx.translate(bx, rim + 1);
     ctx.strokeStyle = '#8b98a8'; ctx.lineWidth = 2.5;
     for (let i = 0; i < 2; i++) {
       const a = mixer.whisk + i * Math.PI / 2;
-      ctx.beginPath(); ctx.ellipse(0, 0, Math.abs(Math.cos(a)) * 18 + 2, 3.5, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(0, 0, Math.abs(Math.cos(a)) * MW * 0.12 + 2, 3, 0, 0, Math.PI * 2); ctx.stroke();
     }
     ctx.restore();
     ctx.restore();
 
-    // combo chip
+    // combo chip above the head
     const m = multiplier();
     if (state === 'play' && m > 1) {
       ctx.save();
       ctx.font = `700 14px ${getComputedStyle(document.documentElement).getPropertyValue('--display')}`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#c9731a'; roundRect(x + 50, GROUND - 160, 34, 22, 11); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.fillText(`x${m}`, x + 67, GROUND - 149);
+      ctx.fillStyle = '#c9731a'; roundRect(mixer.x + MW * 0.3, GROUND - MH - 26, 34, 22, 11); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillText(`x${m}`, mixer.x + MW * 0.3 + 17, GROUND - MH - 15);
       ctx.restore();
     }
   }
@@ -690,9 +703,9 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     const rect = canvas.getBoundingClientRect();
     return (e.clientX - rect.left) / rect.width * W;
   }
-  function setTarget(x) { mixer.tx = Math.max(MIXER.halfBase, Math.min(W - MIXER.halfBase, x)); }
-  canvas.addEventListener('pointerdown', (e) => { e.preventDefault(); canvas.setPointerCapture(e.pointerId); setTarget(pointerToX(e)); });
-  canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' || e.buttons) setTarget(pointerToX(e)); });
+  function setTarget(x) { mixer.tx = Math.max(MIXER.rimHalf - MIXER.bowlOffset, Math.min(W - MIXER.rimHalf - MIXER.bowlOffset, x)); }
+  canvas.addEventListener('pointerdown', (e) => { e.preventDefault(); canvas.setPointerCapture(e.pointerId); setTarget(pointerToX(e) - MIXER.bowlOffset); });
+  canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' || e.buttons) setTarget(pointerToX(e) - MIXER.bowlOffset); });
   window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key === 'a') { keyDir = -1; e.preventDefault(); }
     if (e.key === 'ArrowRight' || e.key === 'd') { keyDir = 1; e.preventDefault(); }
