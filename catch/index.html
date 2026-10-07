@@ -159,15 +159,15 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
         <p>Slide the mixer left and right. Catch the falling ingredients in the bowl, dodge the bees. You have 30 seconds and your score sets your discount.</p>
         <div class="tiers" id="tierLegend"></div>
         <button class="btn" id="startBtn">Start mixing</button>
-        <p class="fine">Catch in a row to build a combo. A ⭐ doubles points for 5 seconds.</p>
+        <p class="fine">Best of 3 tries counts. Catch in a row for a combo, a ⭐ doubles points for a few seconds.</p>
       </div>
     </div>
 
     <div class="overlay" id="endOverlay">
       <div class="sheet">
         <p class="lbl" id="endKicker">You unlocked</p>
-        <div class="result-pct" id="endPct">15% off</div>
-        <p id="endLine">You scored 620 points.</p>
+        <div class="result-pct" id="endPct">5% off</div>
+        <p id="endLine"></p>
         <div class="code-box">
           <div class="code" id="endCode">MIX15</div>
           <button class="copy" id="copyBtn" type="button">Copy</button>
@@ -192,8 +192,9 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
   // ---------- Tune the game here ----------
   const CFG = {
     duration: 30,                       // seconds per round
+    attempts: 3,                        // tries per device, best score counts
     tiers: [                            // score needed for each discount tier (lowest first)
-      { min: 0,   pct: 5,  code: 'MIX5'  },
+      { min: 0,    pct: 5,  code: 'MIX5'  },
       { min: 400,  pct: 10, code: 'MIX10' },
       { min: 800,  pct: 15, code: 'MIX15' },
       { min: 1200, pct: 20, code: 'MIX20' },
@@ -208,18 +209,18 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
       { e: '🍫', pts: 15, w: 3, c: '#6b3e26' },
       { e: '🍯', pts: 25, w: 2, c: '#f2a93b' },
     ],
-    bee:    { e: '🐝', penalty: 30, chance: 0.18, graceSeconds: 3 },
-    golden: { e: '⭐', pts: 50, frenzyMs: 5000, chance: 0.06, cooldownSeconds: 9 },
-    spawnEvery: { start: 0.85, end: 0.45 },   // seconds between drops, start → end of round
-    fallSpeed:  { start: 150,  end: 300 },    // px per second
-    comboStep: 5,                             // catches in a row per extra multiplier
-    maxMultiplier: 3,
-    storageKey: 'mixercatch_result_v1',
+    bee:    { e: '🐝', penalty: 60, chance: 0.32, graceSeconds: 2 },
+    golden: { e: '⭐', pts: 40, frenzyMs: 3000, chance: 0.05, cooldownSeconds: 12 },
+    spawnEvery: { start: 0.95, end: 0.5 },    // seconds between drops, start → end of round
+    fallSpeed:  { start: 190,  end: 400 },    // px per second
+    comboStep: 8,                             // catches in a row per extra multiplier
+    maxMultiplier: 2,
+    storageKey: 'mixercatch_result_v2',
   };
 
   const W = 360, H = 560;
   const GROUND = H - 30;
-  const MIXER = { halfBase: 46, rimY: GROUND - 74, rimHalf: 38, bowlOffset: 6 };
+  const MIXER = { halfBase: 52, rimY: GROUND - 74, rimHalf: 42, bowlOffset: 8 };
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -382,18 +383,23 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     state = 'over';
     stage.classList.add('idle');
     const idx = tierFor(score);
-    const run = { score, pct: CFG.tiers[idx].pct, code: CFG.tiers[idx].code, at: Date.now() };
-    let saved = loadSaved();
-    let note = '';
-    if (!saved) { saved = run; saveResult(run); }
-    else if (saved.score !== run.score) {
-      note = `Your first round counts. You scored ${run.score} this time, your discount stays at ${saved.pct}%.`;
-    }
-    ui.endKicker.textContent = run.pct >= 15 ? 'Amazing! You unlocked' : 'You unlocked';
+    const run = { score, pct: CFG.tiers[idx].pct, code: CFG.tiers[idx].code };
+    let saved = loadSaved() || { best: -1, plays: 0 };
+    saved.plays = (saved.plays || 0) + 1;
+    const improved = run.score > saved.best;
+    if (improved) { saved.best = run.score; saved.pct = run.pct; saved.code = run.code; }
+    saveResult(saved);
+    const left = Math.max(0, CFG.attempts - saved.plays);
+    ui.endKicker.textContent = saved.pct >= 15 ? 'Amazing! You unlocked' : 'You unlocked';
     ui.endPct.textContent = saved.pct + '% off';
-    ui.endLine.textContent = `You scored ${run.score} points.`;
+    ui.endLine.textContent = improved || saved.plays === 1
+      ? `You scored ${run.score} points.`
+      : `You scored ${run.score}. Your best is ${saved.best}, so your discount stays at ${saved.pct}%.`;
     ui.endCode.textContent = saved.code;
-    ui.endNote.textContent = note;
+    ui.endNote.textContent = left > 0
+      ? `Best of ${CFG.attempts} tries counts. ${left} ${left === 1 ? 'try' : 'tries'} left.`
+      : 'That was your last try. Your best score counts.';
+    ui.againBtn.hidden = left === 0;
     ui.copyBtn.textContent = 'Copy';
     ui.emailForm.hidden = false;
     ui.endOverlay.classList.add('show');
@@ -517,67 +523,91 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
 
   function drawMixer() {
     const x = mixer.x, g = GROUND;
+    const bx = MIXER.bowlOffset, rim = -(g - MIXER.rimY);
     ctx.save();
     ctx.translate(x, g);
-    ctx.rotate(mixer.tilt * 0.6);
+    ctx.rotate(mixer.tilt * 0.5);
+
     // shadow
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    ctx.beginPath(); ctx.ellipse(0, 2, 56, 7, 0, 0, Math.PI * 2); ctx.fill();
-    // base
-    ctx.fillStyle = '#c1121f';
-    roundRect(-46, -20, 92, 20, 8); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; roundRect(-42, -18, 84, 5, 3); ctx.fill();
-    // column (back)
-    ctx.fillStyle = '#b30f1b';
-    roundRect(-46, -112, 26, 94, 7); ctx.fill();
-    // head
-    ctx.fillStyle = '#d62828';
+    ctx.beginPath(); ctx.ellipse(2, 2, 60, 7, 0, 0, Math.PI * 2); ctx.fill();
+
+    const red = '#c8102e', redDark = '#8f0a20', redLight = '#e4304c';
+
+    // base: rounded pedestal with a flared foot
+    ctx.fillStyle = redDark; roundRect(-52, -7, 104, 7, 3); ctx.fill();
+    const baseG = ctx.createLinearGradient(0, -26, 0, -6);
+    baseG.addColorStop(0, redLight); baseG.addColorStop(1, red);
+    ctx.fillStyle = baseG; roundRect(-48, -26, 96, 20, 9); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; roundRect(-44, -24, 60, 4, 2); ctx.fill();
+
+    // column + tilt head as one silhouette (side view, head reaches over the bowl)
+    const bodyG = ctx.createLinearGradient(-46, 0, 60, 0);
+    bodyG.addColorStop(0, redDark); bodyG.addColorStop(0.25, red); bodyG.addColorStop(0.6, redLight); bodyG.addColorStop(1, red);
+    ctx.fillStyle = bodyG;
     ctx.beginPath();
-    ctx.moveTo(-46, -88);
-    ctx.lineTo(-46, -112);
-    ctx.quadraticCurveTo(-46, -134, -22, -134);
-    ctx.lineTo(28, -134);
-    ctx.quadraticCurveTo(50, -134, 50, -114);
-    ctx.lineTo(50, -92);
-    ctx.quadraticCurveTo(50, -84, 42, -84);
-    ctx.lineTo(-38, -84);
-    ctx.quadraticCurveTo(-46, -84, -46, -88);
+    ctx.moveTo(-46, -26);
+    ctx.lineTo(-46, -108);
+    ctx.quadraticCurveTo(-46, -140, -14, -140);      // rounded back shoulder
+    ctx.lineTo(26, -140);
+    ctx.quadraticCurveTo(60, -140, 60, -112);        // long rounded nose
+    ctx.quadraticCurveTo(60, -92, 42, -90);          // nose dips down toward the hub
+    ctx.lineTo(-16, -90);                            // underside of the head
+    ctx.lineTo(-16, -26);                            // front face of the column
     ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.22)';
-    roundRect(-36, -128, 70, 6, 3); ctx.fill();
-    // silver band + knob
-    ctx.fillStyle = '#dfe5ec'; roundRect(-10, -116, 40, 9, 4); ctx.fill();
-    ctx.fillStyle = '#2b1d12'; ctx.beginPath(); ctx.arc(40, -108, 5, 0, Math.PI * 2); ctx.fill();
-    // whisk shaft
-    ctx.fillStyle = '#94a3b8'; ctx.fillRect(MIXER.bowlOffset - 3, -84, 6, 14);
-    // bowl
-    const bx = MIXER.bowlOffset, rim = -(g - MIXER.rimY);
-    const bg = ctx.createLinearGradient(bx - 40, 0, bx + 40, 0);
-    bg.addColorStop(0, '#c7d0da'); bg.addColorStop(0.45, '#f1f5f9'); bg.addColorStop(1, '#aeb9c6');
-    ctx.fillStyle = bg;
+    // top highlight along the head
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-30, -134); ctx.quadraticCurveTo(-8, -137, 26, -136); ctx.quadraticCurveTo(44, -135, 54, -124); ctx.stroke();
+    // hinge seam where the head tilts
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-16, -92); ctx.lineTo(-16, -40); ctx.stroke();
+    // head lock lever
+    ctx.fillStyle = '#2b1d12'; roundRect(-44, -70, 10, 4, 2); ctx.fill();
+    ctx.fillStyle = '#dfe5ec'; ctx.beginPath(); ctx.arc(-34, -68, 3.5, 0, Math.PI * 2); ctx.fill();
+
+    // speed control: slot with chrome lever on the side of the head
+    ctx.fillStyle = 'rgba(0,0,0,0.28)'; roundRect(6, -118, 30, 5, 2.5); ctx.fill();
+    ctx.fillStyle = '#eef2f6'; roundRect(10, -123, 9, 14, 3); ctx.fill();
+    ctx.fillStyle = '#9aa7b5'; roundRect(12, -121, 5, 10, 2); ctx.fill();
+
+    // chrome band at the back of the head with badge
+    ctx.fillStyle = '#dfe5ec'; roundRect(-12, -140, 7, 50, 2); ctx.fill();
+    ctx.fillStyle = '#eef2f6'; roundRect(-10, -138, 3, 46, 1); ctx.fill();
+
+    // attachment hub cap on the nose
+    ctx.fillStyle = '#dfe5ec'; ctx.beginPath(); ctx.arc(53, -104, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#6b7784'; ctx.beginPath(); ctx.arc(53, -104, 3.5, 0, Math.PI * 2); ctx.fill();
+
+    // beater shaft from the head into the bowl
+    ctx.fillStyle = '#9aa7b5'; ctx.fillRect(bx - 3, -90, 6, 90 + rim + 2);
+
+    // stainless bowl (wider at the rim, rounded bottom) sitting on the base
+    const bowlG = ctx.createLinearGradient(bx - 44, 0, bx + 44, 0);
+    bowlG.addColorStop(0, '#aab5c2'); bowlG.addColorStop(0.35, '#f4f7fa'); bowlG.addColorStop(0.7, '#d4dce5'); bowlG.addColorStop(1, '#98a4b2');
+    ctx.fillStyle = bowlG;
     ctx.beginPath();
-    ctx.moveTo(bx - 40, rim);
-    ctx.lineTo(bx + 40, rim);
-    ctx.quadraticCurveTo(bx + 36, rim + 40, bx + 24, rim + 52);
-    ctx.lineTo(bx - 24, rim + 52);
-    ctx.quadraticCurveTo(bx - 36, rim + 40, bx - 40, rim);
+    ctx.moveTo(bx - 44, rim);
+    ctx.lineTo(bx + 44, rim);
+    ctx.quadraticCurveTo(bx + 42, rim + 34, bx + 28, rim + 46);
+    ctx.quadraticCurveTo(bx + 16, rim + 50, bx, rim + 50);
+    ctx.quadraticCurveTo(bx - 16, rim + 50, bx - 28, rim + 46);
+    ctx.quadraticCurveTo(bx - 42, rim + 34, bx - 44, rim);
     ctx.closePath(); ctx.fill();
-    // batter inside bowl
-    ctx.fillStyle = '#f6e7c9';
-    ctx.beginPath(); ctx.ellipse(bx, rim + 2, 38, 7, 0, 0, Math.PI * 2); ctx.fill();
-    // spinning whisk wires
-    ctx.save(); ctx.translate(bx, rim + 4);
-    ctx.strokeStyle = '#8b98a8'; ctx.lineWidth = 2;
-    for (let i = 0; i < 3; i++) {
-      const a = mixer.whisk + i * Math.PI / 3;
-      ctx.beginPath(); ctx.ellipse(0, 0, Math.abs(Math.cos(a)) * 14 + 2, 5, 0, 0, Math.PI * 2); ctx.stroke();
+    // bowl handle
+    ctx.strokeStyle = '#c3ccd6'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(bx + 40, rim + 10); ctx.quadraticCurveTo(bx + 60, rim + 18, bx + 38, rim + 34); ctx.stroke();
+    ctx.lineCap = 'butt';
+    // rim and batter
+    ctx.fillStyle = '#e6ebf0'; ctx.beginPath(); ctx.ellipse(bx, rim, 44, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f6e7c9'; ctx.beginPath(); ctx.ellipse(bx, rim + 1, 38, 4, 0, 0, Math.PI * 2); ctx.fill();
+    // spinning flat beater seen from above the batter
+    ctx.save(); ctx.translate(bx, rim + 1);
+    ctx.strokeStyle = '#8b98a8'; ctx.lineWidth = 2.5;
+    for (let i = 0; i < 2; i++) {
+      const a = mixer.whisk + i * Math.PI / 2;
+      ctx.beginPath(); ctx.ellipse(0, 0, Math.abs(Math.cos(a)) * 18 + 2, 3.5, 0, 0, Math.PI * 2); ctx.stroke();
     }
     ctx.restore();
-    // bowl rim highlight
-    ctx.fillStyle = '#e2e8f0';
-    ctx.beginPath(); ctx.ellipse(bx, rim, 40, 5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#f6e7c9';
-    ctx.beginPath(); ctx.ellipse(bx, rim, 33, 3, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
     // combo chip
@@ -586,9 +616,8 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
       ctx.save();
       ctx.font = `700 14px ${getComputedStyle(document.documentElement).getPropertyValue('--display')}`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const label = `x${m}`;
-      ctx.fillStyle = '#c9731a'; roundRect(x + 46, GROUND - 140, 34, 22, 11); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.fillText(label, x + 63, GROUND - 129);
+      ctx.fillStyle = '#c9731a'; roundRect(x + 50, GROUND - 160, 34, 22, 11); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fillText(`x${m}`, x + 67, GROUND - 149);
       ctx.restore();
     }
   }
@@ -696,6 +725,7 @@ form.email button { font: inherit; font-weight: 800; font-size: 13px; border: 0;
     e.preventDefault();
     try { localStorage.removeItem(CFG.storageKey); } catch (err) {}
     ui.endNote.textContent = '';
+    ui.againBtn.hidden = false;
     ui.resetLink.textContent = 'saved discount cleared';
     setTimeout(() => ui.resetLink.textContent = 'reset my saved discount', 1500);
   });
