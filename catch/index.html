@@ -376,22 +376,33 @@ body {
       x, y: -30, vy: speed, vx: type.kind === 'bee' ? rand(-90, 90) : rand(-10, 10),
       r: 17, rot: rand(-0.4, 0.4), rotV: rand(-1.5, 1.5), wob: rand(0, 6.28), type, bounced: false,
     });
+    lastSpawnAt = elapsed;
     return type;
   }
 
+  // Follow-up drops are queued with a short delay so no two items ever start falling in the same moment.
+  let pending = [], lastSpawnAt = -1;
+  const MIN_GAP = 0.2;   // seconds between any two drops
   function spawn() {
     const t = elapsed / CFG.duration;
     const speed = lerp(CFG.fallSpeed.start, CFG.fallSpeed.end, t) * rand(0.88, 1.12);
     const x = rand(24, W - 24);
     const type = spawnOne(x, speed);
     if (type.kind === 'food' && elapsed > CFG.bee.graceSeconds && Math.random() < CFG.bee.escortChance) {
-      // a bee drops right beside the ingredient at the same speed: catch one, risk the other
+      // a bee drops right beside the ingredient a beat later: catch one, risk the other
       const side = x < W / 2 ? 1 : -1;
-      spawnOne(Math.max(24, Math.min(W - 24, x + side * rand(44, 64))), speed, { ...CFG.bee, kind: 'bee', c: '#ffd23f' });
+      pending.push({ at: elapsed + rand(0.18, 0.3), x: Math.max(24, Math.min(W - 24, x + side * rand(44, 64))), speed: speed * 1.04,
+        type: { ...CFG.bee, kind: 'bee', c: '#ffd23f' } });
     } else if (Math.random() < CFG.pairChance) {
-      // a second drop far away on the other side: you can only reach one of them
+      // a second drop on the far side shortly after: you can only reach one of them
       const far = x < W / 2 ? rand(x + 150, W - 24) : rand(24, x - 150);
-      spawnOne(Math.max(24, Math.min(W - 24, far)), speed * rand(0.95, 1.05));
+      pending.push({ at: elapsed + rand(0.3, 0.5), x: Math.max(24, Math.min(W - 24, far)), speed: speed * rand(0.95, 1.05), type: null });
+    }
+  }
+  function releasePending() {
+    for (let i = pending.length - 1; i >= 0; i--) {
+      const q = pending[i];
+      if (elapsed >= q.at && elapsed - lastSpawnAt >= MIN_GAP) { spawnOne(q.x, q.speed, q.type); pending.splice(i, 1); break; }
     }
   }
 
@@ -420,7 +431,7 @@ body {
   // ---------- Game flow ----------
   function startGame() {
     score = 0; elapsed = 0; streak = 0; frenzyUntil = 0; lastGolden = -99; spawnTimer = 0.4; tierIndex = 0;
-    items = []; parts = []; floats = []; confetti = []; shake = 0; flash = 0;
+    items = []; pending = []; lastSpawnAt = -1; parts = []; floats = []; confetti = []; shake = 0; flash = 0;
     mixer.x = mixer.tx = W / 2; mixer.vx = 0;
     ui.startOverlay.classList.remove('show');
     ui.endOverlay.classList.remove('show');
@@ -481,10 +492,11 @@ body {
     elapsed += dt;
     if (elapsed >= CFG.duration) { elapsed = CFG.duration; updateHud(); endGame(); return; }
 
+    releasePending();
     spawnTimer -= dt;
-    if (spawnTimer <= 0) {
+    if (spawnTimer <= 0 && elapsed - lastSpawnAt >= MIN_GAP) {
       spawn();
-      spawnTimer = lerp(CFG.spawnEvery.start, CFG.spawnEvery.end, elapsed / CFG.duration) * rand(0.8, 1.2);
+      spawnTimer = Math.max(0.25, lerp(CFG.spawnEvery.start, CFG.spawnEvery.end, elapsed / CFG.duration) * rand(0.8, 1.2));
     }
 
     const bowlX = mixer.x + MIXER.bowlOffset;
