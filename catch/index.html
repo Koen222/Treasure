@@ -257,6 +257,7 @@ html.embed #bg, html.embed #resetDemo { display: none; }
     maxMultiplier: 2,
     storageKey: 'mixercatch_result_v5',
     emailKey: 'mixercatch_email',
+    klaviyo: { companyId: 'X2RZEZ', listId: 'WA99dt', metric: 'Played Mixer Catch', source: 'Mixer Catch game' },
   };
 
   const W = 360, H = 560;
@@ -374,6 +375,40 @@ html.embed #bg, html.embed #resetDemo { display: none; }
     ui.next.textContent = nxt ? `${nxt.min - score} more points for ${nxt.pct}% off` : 'Top discount unlocked.';
   }
 
+  // Klaviyo: the public client endpoints, safe to call from the browser with the public company id.
+  function klaviyoPost(path, data) {
+    try {
+      return fetch(`https://a.klaviyo.com/client/${path}/?company_id=${CFG.klaviyo.companyId}`, {
+        method: 'POST', keepalive: true,
+        headers: { 'Content-Type': 'application/vnd.api+json', 'revision': '2025-01-15' },
+        body: JSON.stringify({ data }),
+      }).catch(() => {});
+    } catch (e) { return Promise.resolve(); }
+  }
+  function klaviyoSubscribe(email, properties) {
+    return klaviyoPost('subscriptions', {
+      type: 'subscription',
+      attributes: {
+        custom_source: CFG.klaviyo.source,
+        profile: { data: { type: 'profile', attributes: {
+          email, properties,
+          subscriptions: { email: { marketing: { consent: 'SUBSCRIBED' } } },
+        } } },
+      },
+      relationships: { list: { data: { type: 'list', id: CFG.klaviyo.listId } } },
+    });
+  }
+  function klaviyoEvent(email, properties) {
+    return klaviyoPost('events', {
+      type: 'event',
+      attributes: {
+        properties,
+        metric: { data: { type: 'metric', attributes: { name: CFG.klaviyo.metric } } },
+        profile: { data: { type: 'profile', attributes: { email } } },
+      },
+    });
+  }
+
   function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 
   // ---------- Spawning ----------
@@ -484,7 +519,10 @@ html.embed #bg, html.embed #resetDemo { display: none; }
       : 'That was your last try. Your best score counts.';
     ui.againBtn.hidden = left === 0;
     ui.copyBtn.textContent = 'Copy';
-    // Production: POST { email: playerEmail, code: saved.code, score } to your Klaviyo / Shopify endpoint here.
+    if (playerEmail) {
+      klaviyoSubscribe(playerEmail, { mixer_catch_discount: saved.pct, mixer_catch_code: saved.code, mixer_catch_best: saved.best, mixer_catch_plays: saved.plays });
+      klaviyoEvent(playerEmail, { score: run.score, discount: saved.pct, code: saved.code, best_score: saved.best, play_number: saved.plays, improved });
+    }
     ui.endMail.textContent = `${saved.code} is on its way to ${playerEmail}.`;
     ui.endOverlay.classList.add('show');
     if (saved.pct >= topTier.pct) startConfetti();
@@ -796,6 +834,8 @@ html.embed #bg, html.embed #resetDemo { display: none; }
     if (!ok) { ui.startEmail.focus(); return; }
     playerEmail = email;
     try { localStorage.setItem(CFG.emailKey, email); } catch (err) {}
+    // capture the lead as soon as they enter their email, even if they never finish a round
+    if (!(loadSaved() || {}).plays) klaviyoSubscribe(email, { mixer_catch_discount: CFG.tiers[0].pct, mixer_catch_code: CFG.tiers[0].code, mixer_catch_best: 0, mixer_catch_plays: 0 });
     startGame();
   });
   ui.startEmail.addEventListener('input', () => { ui.startErr.hidden = true; ui.startEmail.classList.remove('bad'); });
