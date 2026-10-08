@@ -816,13 +816,18 @@ html.embed #bg, html.embed #resetDemo { display: none; }
   function setTarget(x) { mixer.tx = Math.max(MIXER.rimHalf - MIXER.bowlOffset, Math.min(W - MIXER.rimHalf - MIXER.bowlOffset, x)); }
   canvas.addEventListener('pointerdown', (e) => { e.preventDefault(); canvas.setPointerCapture(e.pointerId); setTarget(pointerToX(e) - MIXER.bowlOffset); });
   canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' || e.buttons) setTarget(pointerToX(e) - MIXER.bowlOffset); });
+  // Only steer with the keyboard while a round is running and the shopper isn't typing in a field.
+  const typing = (e) => { const t = e.target; return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable); };
+  const isLeft = (k) => k === 'ArrowLeft' || k === 'a' || k === 'A';
+  const isRight = (k) => k === 'ArrowRight' || k === 'd' || k === 'D';
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft' || e.key === 'a') { keyDir = -1; e.preventDefault(); }
-    if (e.key === 'ArrowRight' || e.key === 'd') { keyDir = 1; e.preventDefault(); }
+    if (typing(e) || state !== 'play') { keyDir = 0; return; }
+    if (isLeft(e.key)) { keyDir = -1; e.preventDefault(); }
+    if (isRight(e.key)) { keyDir = 1; e.preventDefault(); }
   });
   window.addEventListener('keyup', (e) => {
-    if ((e.key === 'ArrowLeft' || e.key === 'a') && keyDir === -1) keyDir = 0;
-    if ((e.key === 'ArrowRight' || e.key === 'd') && keyDir === 1) keyDir = 0;
+    if (isLeft(e.key) && keyDir === -1) keyDir = 0;
+    if (isRight(e.key) && keyDir === 1) keyDir = 0;
   });
 
   ui.startForm.addEventListener('submit', (e) => {
@@ -836,6 +841,7 @@ html.embed #bg, html.embed #resetDemo { display: none; }
     try { localStorage.setItem(CFG.emailKey, email); } catch (err) {}
     // capture the lead as soon as they enter their email, even if they never finish a round
     if (!(loadSaved() || {}).plays) klaviyoSubscribe(email, { mixer_catch_discount: CFG.tiers[0].pct, mixer_catch_code: CFG.tiers[0].code, mixer_catch_best: 0, mixer_catch_plays: 0 });
+    ui.startEmail.blur(); // hand the keyboard back to the game
     startGame();
   });
   ui.startEmail.addEventListener('input', () => { ui.startErr.hidden = true; ui.startEmail.classList.remove('bad'); });
