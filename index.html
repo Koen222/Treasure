@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#f5d2a8" />
+<title>KitchenAid Slider</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="hud">
+      <div class="hud-item"><span class="label">SCORE</span><span id="score">0</span></div>
+      <div class="hud-item"><span class="label">LIVES</span><span id="lives">3</span></div>
+      <div class="hud-item"><span class="label">LEVEL</span><span id="level">1</span></div>
+    </header>
+
+    <div id="stage">
+      <canvas id="game"></canvas>
+      <div id="overlay" class="overlay show">
+        <div class="overlay-card">
+          <h1>KitchenAid<br/>Slider</h1>
+          <p class="tag">Swipe to slide the mixer across the counter.<br/>Eat the foodies. Dodge the bees.</p>
+          <button id="startBtn">Start Mixing</button>
+          <p class="hint">Tip: tap the corners of the counter for shortcuts.</p>
+        </div>
+      </div>
+    </div>
+
+    <footer id="controls">
+      <button class="dpad up" data-dir="up" aria-label="Up">▲</button>
+      <button class="dpad left" data-dir="left" aria-label="Left">◀</button>
+      <button class="dpad right" data-dir="right" aria-label="Right">▶</button>
+      <button class="dpad down" data-dir="down" aria-label="Down">▼</button>
+    </footer>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
