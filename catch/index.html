@@ -255,9 +255,13 @@ html.embed #bg, html.embed #resetDemo { display: none; }
     fallSpeed:  { start: 280,  end: 560 },    // px per second
     comboStep: 8,                             // catches in a row per extra multiplier
     maxMultiplier: 2,
-    storageKey: 'mixercatch_result_v5',
+    storageKey: 'mixercatch_result_v6',       // per email: the key gets ':<email>' appended
     emailKey: 'mixercatch_email',
-    klaviyo: { companyId: 'X2RZEZ', listId: 'WA99dt', metric: 'Played Mixer Catch', source: 'Mixer Catch game' },
+    klaviyo: {
+      companyId: 'X2RZEZ', listId: 'WA99dt', source: 'Mixer Catch game',
+      metric: 'Played Mixer Catch',            // every finished round
+      tierMetric: 'Mixer Catch tier unlocked', // only when a round lifts the player to a higher discount
+    },
   };
 
   const W = 360, H = 560;
@@ -398,12 +402,12 @@ html.embed #bg, html.embed #resetDemo { display: none; }
       relationships: { list: { data: { type: 'list', id: CFG.klaviyo.listId } } },
     });
   }
-  function klaviyoEvent(email, properties) {
+  function klaviyoEvent(email, properties, metric = CFG.klaviyo.metric) {
     return klaviyoPost('events', {
       type: 'event',
       attributes: {
         properties,
-        metric: { data: { type: 'metric', attributes: { name: CFG.klaviyo.metric } } },
+        metric: { data: { type: 'metric', attributes: { name: metric } } },
         profile: { data: { type: 'profile', attributes: { email } } },
       },
     });
@@ -490,11 +494,13 @@ html.embed #bg, html.embed #resetDemo { display: none; }
     updateHud();
   }
 
+  // Results are stored per email address, so two people sharing a browser don't share a score.
+  const savedKey = () => CFG.storageKey + ':' + (playerEmail || '').trim().toLowerCase();
   function loadSaved() {
-    try { return JSON.parse(localStorage.getItem(CFG.storageKey) || 'null'); } catch (e) { return null; }
+    try { return JSON.parse(localStorage.getItem(savedKey()) || 'null'); } catch (e) { return null; }
   }
   function saveResult(res) {
-    try { localStorage.setItem(CFG.storageKey, JSON.stringify(res)); } catch (e) {}
+    try { localStorage.setItem(savedKey(), JSON.stringify(res)); } catch (e) {}
   }
 
   function endGame() {
@@ -503,10 +509,14 @@ html.embed #bg, html.embed #resetDemo { display: none; }
     const idx = tierFor(score);
     const run = { score, pct: CFG.tiers[idx].pct, code: CFG.tiers[idx].code };
     let saved = loadSaved() || { best: -1, plays: 0 };
+    const prevPct = saved.pct || 0;
     saved.plays = (saved.plays || 0) + 1;
     const improved = run.score > saved.best;
     if (improved) { saved.best = run.score; saved.pct = run.pct; saved.code = run.code; }
     saveResult(saved);
+    // A higher tier than this player had before. The base tier is never "unlocked": everyone gets it
+    // for playing, and writing it to the profile could overwrite a better code earned on another device.
+    const tierUp = run.pct > prevPct && run.pct > CFG.tiers[0].pct;
     const left = Math.max(0, CFG.attempts - saved.plays);
     ui.endKicker.textContent = saved.pct >= topTier.pct ? 'Top score. You unlocked' : 'You unlocked';
     ui.endPct.textContent = saved.pct + '% off';
@@ -520,8 +530,12 @@ html.embed #bg, html.embed #resetDemo { display: none; }
     ui.againBtn.hidden = left === 0;
     ui.copyBtn.textContent = 'Copy';
     if (playerEmail) {
-      klaviyoSubscribe(playerEmail, { mixer_catch_discount: saved.pct, mixer_catch_code: saved.code, mixer_catch_best: saved.best, mixer_catch_plays: saved.plays });
-      klaviyoEvent(playerEmail, { score: run.score, discount: saved.pct, code: saved.code, best_score: saved.best, play_number: saved.plays, improved });
+      klaviyoEvent(playerEmail, { score: run.score, discount: saved.pct, code: saved.code, best_score: saved.best, play_number: saved.plays, improved, tier_up: tierUp });
+      if (tierUp) {
+        // Only now does the profile change, and only ever to a higher discount than it had.
+        klaviyoSubscribe(playerEmail, { mixer_catch_discount: run.pct, mixer_catch_code: run.code });
+        klaviyoEvent(playerEmail, { score: run.score, discount: run.pct, code: run.code }, CFG.klaviyo.tierMetric);
+      }
     }
     ui.endMail.textContent = `${saved.code} is on its way to ${playerEmail}.`;
     ui.endOverlay.classList.add('show');
@@ -839,8 +853,10 @@ html.embed #bg, html.embed #resetDemo { display: none; }
     if (!ok) { ui.startEmail.focus(); return; }
     playerEmail = email;
     try { localStorage.setItem(CFG.emailKey, email); } catch (err) {}
-    // capture the lead as soon as they enter their email, even if they never finish a round
-    if (!(loadSaved() || {}).plays) klaviyoSubscribe(email, { mixer_catch_discount: CFG.tiers[0].pct, mixer_catch_code: CFG.tiers[0].code, mixer_catch_best: 0, mixer_catch_plays: 0 });
+    // capture the lead as soon as they enter their email, even if they never finish a round.
+    // No discount properties here: the welcome email falls back to the base code, and a better
+    // code already on the profile must survive a replay from a new browser.
+    if (!(loadSaved() || {}).plays) klaviyoSubscribe(email, {});
     ui.startEmail.blur(); // hand the keyboard back to the game
     startGame();
   });
@@ -865,7 +881,7 @@ html.embed #bg, html.embed #resetDemo { display: none; }
   });
   ui.resetLink.addEventListener('click', (e) => {
     e.preventDefault();
-    try { localStorage.removeItem(CFG.storageKey); localStorage.removeItem(CFG.emailKey); } catch (err) {}
+    try { localStorage.removeItem(savedKey()); localStorage.removeItem(CFG.emailKey); } catch (err) {}
     ui.endNote.textContent = '';
     ui.startEmail.value = '';
     ui.againBtn.hidden = false;
@@ -876,7 +892,7 @@ html.embed #bg, html.embed #resetDemo { display: none; }
   // Small hook for automated playtesting; harmless in production.
   window.__mixerCatch = {
     items: () => items, score: () => score, state: () => state, elapsed: () => elapsed,
-    setTarget, start: () => { playerEmail = playerEmail || 'bot@example.com'; startGame(); }, rimY: MIXER.rimY, bowlX: () => mixer.x + MIXER.bowlOffset, rimHalf: MIXER.rimHalf, mixerX: () => mixer.x,
+    setTarget, start: () => { playerEmail = playerEmail || 'bot@example.com'; startGame(); }, addScore: (n) => { score += n; }, rimY: MIXER.rimY, bowlX: () => mixer.x + MIXER.bowlOffset, rimHalf: MIXER.rimHalf, mixerX: () => mixer.x,
   };
 
   // ---------- Boot ----------
