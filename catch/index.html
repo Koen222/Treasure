@@ -144,6 +144,10 @@ body {
 #resetDemo a { color: inherit; }
 
 @media (prefers-reduced-motion: reduce) { .badge.pop { animation: none; } .fill { transition: none; } }
+/* Embed mode: inside the store's pop-up only the card shows; the store page is the background. */
+html.embed, html.embed body { background: transparent; }
+html.embed body { padding: 0; }
+html.embed #bg, html.embed #resetDemo { display: none; }
 </style>
 </head>
 <body>
@@ -205,6 +209,8 @@ body {
 <script>
 (() => {
   'use strict';
+  const EMBED = (window.self !== window.top) || location.hash === '#embed';
+  if (EMBED) document.documentElement.classList.add('embed');
 
   // ---------- Tune the game here ----------
   const CFG = {
@@ -271,8 +277,9 @@ body {
   // ---------- Sizing ----------
   function fit() {
     const panelH = document.querySelector('.panel').offsetHeight;
-    const availW = Math.min(400, window.innerWidth - 32) - 24;
-    const availH = window.innerHeight - 32 - panelH - 32 - 34;
+    const pad = EMBED ? 0 : 32, foot = EMBED ? 0 : 34;
+    const availW = Math.min(400, window.innerWidth - pad) - 24;
+    const availH = window.innerHeight - pad - panelH - 32 - foot;
     const scale = Math.max(0.4, Math.min(availW / W, availH / H));
     stage.style.width = Math.floor(W * scale) + 'px';
     stage.style.height = Math.floor(H * scale) + 'px';
@@ -595,6 +602,7 @@ body {
     if (state === 'play') { bgItems.forEach(it => { it.y += it.vy * dt; }); bgItems = bgItems.filter(it => it.y < window.innerHeight + 40); }
   }
   function drawBg() {
+    if (EMBED) return;
     const bw = window.innerWidth, bh = window.innerHeight;
     const g = bgCtx.createLinearGradient(0, 0, 0, bh);
     g.addColorStop(0, '#fffbd9'); g.addColorStop(1, '#f6deb8');
