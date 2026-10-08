@@ -1,0 +1,4 @@
+# play.willowhavenstore.com: the catch game answers at the root, the maze game stays at /slider/
+/            /catch/index.html   200
+/slider      /index.html         200
+/slider/     /index.html         200
